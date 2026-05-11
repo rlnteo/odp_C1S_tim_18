@@ -1,0 +1,11 @@
+export class TeamDto {
+    constructor(
+        public id: number = 0,
+        public name: string = "",
+        public description: string = "",
+        public avatarUrl: string | null = null,
+        public createdBy: number = 0,
+        public createdAt: Date = new Date(),
+        public role: string = "",   // uloga trenutnog korisnika u timu
+    ) { }
+}
