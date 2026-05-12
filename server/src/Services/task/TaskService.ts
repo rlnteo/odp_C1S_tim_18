@@ -1,5 +1,8 @@
 import { ITaskService } from "../../Domain/services/task/ITaskService";
 import { ITaskRepository } from "../../Domain/repositories/task/ITaskRepository";
+import { ITaskAssigneeRepository } from "../../Domain/repositories/task/ITaskAssigneeRepository";
+import { ITaskCommentRepository } from "../../Domain/repositories/task/ITaskCommentRepository";
+import { ITaskPermissionRepository } from "../../Domain/repositories/task/ITaskPermissionRepository";
 import { IUserRepository } from "../../Domain/repositories/users/IUserRepository";
 import { TaskDto } from "../../Domain/DTOs/task/TaskDto";
 import { CreateTaskDto } from "../../Domain/DTOs/task/CreateTaskDto";
@@ -9,6 +12,9 @@ import { TaskStatus } from "../../Domain/enums/TaskStatus";
 export class TaskService implements ITaskService {
     public constructor(
         private readonly taskRepo: ITaskRepository,
+        private readonly assigneeRepo: ITaskAssigneeRepository,
+        private readonly commentRepo: ITaskCommentRepository,
+        private readonly permRepo: ITaskPermissionRepository,
         private readonly userRepo: IUserRepository,
     ) { }
 
@@ -31,50 +37,50 @@ export class TaskService implements ITaskService {
     }
 
     async updateTask(id: number, fields: Partial<CreateTaskDto>, requesterId: number): Promise<boolean> {
-        const isOwner = await this.taskRepo.isOwnerOfTeam(id, requesterId);
-        const isCreator = await this.taskRepo.isCreator(id, requesterId);
+        const isOwner = await this.permRepo.isOwnerOfTeam(id, requesterId);
+        const isCreator = await this.permRepo.isCreator(id, requesterId);
         if (!isOwner && !isCreator) return false;
         return this.taskRepo.update(id, fields);
     }
 
     async updateStatus(id: number, status: TaskStatus, requesterId: number): Promise<boolean> {
-        const isAssigned = await this.taskRepo.isAssigned(id, requesterId);
-        const isOwner = await this.taskRepo.isOwnerOfTeam(id, requesterId);
+        const isAssigned = await this.assigneeRepo.isAssigned(id, requesterId);
+        const isOwner = await this.permRepo.isOwnerOfTeam(id, requesterId);
         if (!isAssigned && !isOwner) return false;
         return this.taskRepo.updateStatus(id, status);
     }
 
     async deleteTask(id: number, requesterId: number): Promise<boolean> {
-        const isOwner = await this.taskRepo.isOwnerOfTeam(id, requesterId);
-        const isCreator = await this.taskRepo.isCreator(id, requesterId);
+        const isOwner = await this.permRepo.isOwnerOfTeam(id, requesterId);
+        const isCreator = await this.permRepo.isCreator(id, requesterId);
         if (!isOwner && !isCreator) return false;
         return this.taskRepo.delete(id);
     }
 
     async assignUser(taskId: number, userId: number, requesterId: number): Promise<boolean> {
-        const isOwner = await this.taskRepo.isOwnerOfTeam(taskId, requesterId);
+        const isOwner = await this.permRepo.isOwnerOfTeam(taskId, requesterId);
         if (!isOwner) return false;
         const user = await this.userRepo.findById(userId);
         if (user.id === 0) return false;
-        return this.taskRepo.assignUser(taskId, userId, requesterId);
+        return this.assigneeRepo.assignUser(taskId, userId, requesterId);
     }
 
     async unassignUser(taskId: number, userId: number, requesterId: number): Promise<boolean> {
-        const isOwner = await this.taskRepo.isOwnerOfTeam(taskId, requesterId);
+        const isOwner = await this.permRepo.isOwnerOfTeam(taskId, requesterId);
         if (!isOwner) return false;
-        return this.taskRepo.unassignUser(taskId, userId);
+        return this.assigneeRepo.unassignUser(taskId, userId);
     }
 
     async addComment(taskId: number, userId: number, content: string): Promise<CommentDto | null> {
-        const isAssigned = await this.taskRepo.isAssigned(taskId, userId);
+        const isAssigned = await this.assigneeRepo.isAssigned(taskId, userId);
         if (!isAssigned) return null;
-        return this.taskRepo.addComment(taskId, userId, content);
+        return this.commentRepo.addComment(taskId, userId, content);
     }
 
     async deleteComment(commentId: number, taskId: number, requesterId: number): Promise<boolean> {
-        const isOwner = await this.taskRepo.isOwnerOfTeam(taskId, requesterId);
-        const isCommentOwner = await this.taskRepo.isCommentOwner(commentId, requesterId);
+        const isOwner = await this.permRepo.isOwnerOfTeam(taskId, requesterId);
+        const isCommentOwner = await this.commentRepo.isCommentOwner(commentId, requesterId);
         if (!isOwner && !isCommentOwner) return false;
-        return this.taskRepo.deleteComment(commentId);
+        return this.commentRepo.deleteComment(commentId);
     }
 }

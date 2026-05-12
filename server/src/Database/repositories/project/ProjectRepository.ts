@@ -1,5 +1,8 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IProjectRepository } from "../../../Domain/repositories/project/IProjectRepository";
+import { IProjectTagRepository } from "../../../Domain/repositories/project/IProjectTagRepository";
+import { IProjectWatcherRepository } from "../../../Domain/repositories/project/IProjectWatcherRepository";
+import { IProjectPermissionRepository } from "../../../Domain/repositories/project/IProjectPermissionRepository";
 import { Project } from "../../../Domain/models/Project";
 import { ProjectDto } from "../../../Domain/DTOs/project/ProjectDto";
 import { CreateProjectDto } from "../../../Domain/DTOs/project/CreateProjectDto";
@@ -9,7 +12,9 @@ import { ProjectPriority } from "../../../Domain/enums/ProjectPriority";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
-export class ProjectRepository implements IProjectRepository {
+export class ProjectRepository implements IProjectRepository, IProjectTagRepository,
+    IProjectWatcherRepository,
+    IProjectPermissionRepository {
     public constructor(
         private readonly db: DbManager,
         private readonly logger: ILoggerService,

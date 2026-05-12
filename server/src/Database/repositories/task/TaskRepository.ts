@@ -1,5 +1,9 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITaskRepository } from "../../../Domain/repositories/task/ITaskRepository";
+import { ITaskAssigneeRepository } from "../../../Domain/repositories/task/ITaskAssigneeRepository";
+import { ITaskCommentRepository } from "../../../Domain/repositories/task/ITaskCommentRepository";
+import { ITaskPermissionRepository } from "../../../Domain/repositories/task/ITaskPermissionRepository";
+
 import { Task } from "../../../Domain/models/Task";
 import { TaskDto } from "../../../Domain/DTOs/task/TaskDto";
 import { CreateTaskDto } from "../../../Domain/DTOs/task/CreateTaskDto";
@@ -10,7 +14,7 @@ import { ProjectPriority } from "../../../Domain/enums/ProjectPriority";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
-export class TaskRepository implements ITaskRepository {
+export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository, ITaskCommentRepository, ITaskPermissionRepository {
     public constructor(
         private readonly db: DbManager,
         private readonly logger: ILoggerService,

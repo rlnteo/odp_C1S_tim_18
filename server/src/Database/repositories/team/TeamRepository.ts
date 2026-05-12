@@ -1,5 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITeamRepository } from "../../../Domain/repositories/team/ITeamRepository";
+import { ITeamMemberRepository } from "../../../Domain/repositories/team/ITeamMemberRepository";
+import { ITeamPermissionRepository } from "../../../Domain/repositories/team/ITeamPermissionRepository";
 import { Team } from "../../../Domain/models/Team";
 import { TeamDto } from "../../../Domain/DTOs/team/TeamDto";
 import { CreateTeamDto } from "../../../Domain/DTOs/team/CreateTeamDto";
@@ -8,7 +10,8 @@ import { TeamRole } from "../../../Domain/enums/TeamRole";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
-export class TeamRepository implements ITeamRepository {
+export class TeamRepository implements ITeamRepository,
+    ITeamMemberRepository, ITeamPermissionRepository {
     public constructor(
         private readonly db: DbManager,
         private readonly logger: ILoggerService,

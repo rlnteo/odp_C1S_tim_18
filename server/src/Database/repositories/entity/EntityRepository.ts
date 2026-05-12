@@ -13,7 +13,7 @@ export class EntityRepository implements IEntityRepository {
   public constructor(
     private readonly db: DbManager,
     private readonly logger: ILoggerService,
-  ) {}
+  ) { }
 
   private map(r: RowDataPacket): EntityDto {
     return new EntityDto(r.id, r.userId, r.status as EntityStatus, new Date(r.createdAt));

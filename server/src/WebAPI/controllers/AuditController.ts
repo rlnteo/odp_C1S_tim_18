@@ -6,7 +6,6 @@ import { UserRole } from "../../Domain/enums/UserRole";
 
 export class AuditController {
     private readonly router = Router();
-
     public constructor(private readonly auditService: IAuditService) {
         this.router.get("/audit",
             authenticate, authorize(UserRole.ADMIN),

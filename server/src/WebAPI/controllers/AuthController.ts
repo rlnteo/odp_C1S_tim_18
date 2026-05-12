@@ -12,7 +12,7 @@ export class AuthController {
 
   public constructor(
     private readonly authService: IAuthService,
-    private readonly auditService: IAuditService
+    private readonly auditService: IAuditService,
   ) {
     this.router.post("/auth/login", this.login.bind(this));
     this.router.post("/auth/register", this.register.bind(this));
@@ -31,12 +31,10 @@ export class AuthController {
       { expiresIn: "24h" }
     );
     await this.auditService.log({
-      userId: result.id,
-      actionType: "USER_LOGIN",
-      entityType: "user",
-      entityId: result.id,
+      userId: result.id, actionType: "USER_LOGIN",
+      entityType: "user", entityId: result.id,
       description: `User ${result.username} logged in`,
-      ipAddress: req.ip ?? ""
+      ipAddress: req.ip ?? "",
     });
     res.status(200).json({ success: true, message: "Login successful", data: token });
   }
@@ -53,24 +51,20 @@ export class AuthController {
       { expiresIn: "24h" }
     );
     await this.auditService.log({
-      userId: result.id,
-      actionType: "USER_REGISTER",
-      entityType: "user",
-      entityId: result.id,
+      userId: result.id, actionType: "USER_REGISTER",
+      entityType: "user", entityId: result.id,
       description: `User ${result.username} registered`,
-      ipAddress: req.ip ?? ""
+      ipAddress: req.ip ?? "",
     });
     res.status(201).json({ success: true, message: "Registration successful", data: token });
   }
 
   private async logout(req: Request, res: Response): Promise<void> {
     await this.auditService.log({
-      userId: req.user!.id,
-      actionType: "USER_LOGOUT",
-      entityType: "user",
-      entityId: req.user!.id,
+      userId: req.user!.id, actionType: "USER_LOGOUT",
+      entityType: "user", entityId: req.user!.id,
       description: `User ${req.user!.username} logged out`,
-      ipAddress: req.ip ?? ""
+      ipAddress: req.ip ?? "",
     });
     res.status(200).json({ success: true, message: "Logged out successfully" });
   }
