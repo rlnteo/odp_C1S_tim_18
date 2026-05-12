@@ -5,10 +5,9 @@ import { ITaskCommentRepository } from "../../../Domain/repositories/task/ITaskC
 import { ITaskPermissionRepository } from "../../../Domain/repositories/task/ITaskPermissionRepository";
 
 import { Task } from "../../../Domain/models/Task";
-import { TaskDto } from "../../../Domain/DTOs/task/TaskDto";
-import { CreateTaskDto } from "../../../Domain/DTOs/task/CreateTaskDto";
-import { AssigneeDto } from "../../../Domain/DTOs/task/AssigneeDto";
-import { CommentDto } from "../../../Domain/DTOs/task/CommentDto";
+import { TaskUpdateFields } from "../../../Domain/types/TaskUpdateFields";
+import { Assignee } from "../../../Domain/models/Assignee";
+import { Comment } from "../../../Domain/models/Comment";
 import { TaskStatus } from "../../../Domain/enums/TaskStatus";
 import { ProjectPriority } from "../../../Domain/enums/ProjectPriority";
 import { DbManager } from "../../connection/DbConnectionPool";
@@ -20,8 +19,8 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
         private readonly logger: ILoggerService,
     ) { }
 
-    private mapTask(r: RowDataPacket, assignees: AssigneeDto[] = [], comments: CommentDto[] = []): TaskDto {
-        return new TaskDto(
+    private mapTask(r: RowDataPacket, assignees: Assignee[] = [], comments: Comment[] = []): Task {
+        return new Task(
             r.id, r.projectId, r.title, r.description,
             r.priority as ProjectPriority, r.status as TaskStatus,
             Number(r.estimatedHours), r.dueDate ? new Date(r.dueDate) : null,
@@ -29,24 +28,24 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
         );
     }
 
-    async create(dto: CreateTaskDto): Promise<Task> {
+    async create(task: Task): Promise<Task> {
         const res = await this.db.getWriteConnection();
         if (!res) return new Task();
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO tasks (projectId, title, description, priority, status, estimatedHours, dueDate, createdBy)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [dto.projectId, dto.title, dto.description, dto.priority, dto.status, dto.estimatedHours, dto.dueDate, dto.createdBy]
+                [task.projectId, task.title, task.description, task.priority, task.status, task.estimatedHours, task.dueDate, task.createdBy]
             );
             if (result.insertId === 0) return new Task();
-            return new Task(result.insertId, dto.projectId, dto.title, dto.description, dto.priority, dto.status, dto.estimatedHours, dto.dueDate, dto.createdBy);
+            return new Task(result.insertId, task.projectId, task.title, task.description, task.priority, task.status, task.estimatedHours, task.dueDate, task.createdBy);
         } catch (err) {
             this.logger.error("TaskRepository", "create failed", err);
             return new Task();
         } finally { res.conn.release(); }
     }
 
-    async findById(id: number): Promise<TaskDto | null> {
+    async findById(id: number): Promise<Task | null> {
         const res = await this.db.getReadConnection();
         if (!res) return null;
         try {
@@ -65,7 +64,7 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
         } finally { res.conn.release(); }
     }
 
-    async findByProjectId(projectId: number): Promise<TaskDto[]> {
+    async findByProjectId(projectId: number): Promise<Task[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
         try {
@@ -86,7 +85,7 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
         } finally { res.conn.release(); }
     }
 
-    async findAssignedToUser(userId: number): Promise<TaskDto[]> {
+    async findAssignedToUser(userId: number): Promise<Task[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
         try {
@@ -107,7 +106,7 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
         } finally { res.conn.release(); }
     }
 
-    async update(id: number, fields: Partial<Task>): Promise<boolean> {
+    async update(id: number, fields: TaskUpdateFields): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
         try {
@@ -115,9 +114,8 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
             if (entries.length === 0) return false;
             const setClause = entries.map(([k]) => `${k} = ?`).join(", ");
             const values = entries.map(([, v]) => v);
-            const [result] = await res.conn.execute<ResultSetHeader>(
-                `UPDATE tasks SET ${setClause} WHERE id = ?`, [...values, id]
-            );
+            const sql: string = `UPDATE tasks SET ${setClause} WHERE id = ?`;
+            const [result] = await res.conn.query<ResultSetHeader>(sql, [...values, id]);
             return result.affectedRows > 0;
         } catch (err) {
             this.logger.error("TaskRepository", "update failed", err);
@@ -153,7 +151,7 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
         } finally { res.conn.release(); }
     }
 
-    async getAssignees(taskId: number): Promise<AssigneeDto[]> {
+    async getAssignees(taskId: number): Promise<Assignee[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
         try {
@@ -164,7 +162,7 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
          WHERE ta.taskId = ?`,
                 [taskId]
             );
-            return rows.map((r) => new AssigneeDto(r.userId, r.username, new Date(r.assignedAt), r.assignedBy));
+            return rows.map((r) => new Assignee(r.userId, r.username, new Date(r.assignedAt), r.assignedBy));
         } catch (err) {
             this.logger.error("TaskRepository", "getAssignees failed", err);
             return [];
@@ -246,7 +244,7 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
         } finally { res.conn.release(); }
     }
 
-    async getComments(taskId: number): Promise<CommentDto[]> {
+    async getComments(taskId: number): Promise<Comment[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
         try {
@@ -256,14 +254,14 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
          WHERE c.taskId = ? ORDER BY c.createdAt ASC`,
                 [taskId]
             );
-            return rows.map((r) => new CommentDto(r.id, r.taskId, r.userId, r.username, r.content, new Date(r.createdAt)));
+            return rows.map((r) => new Comment(r.id, r.taskId, r.userId, r.username, r.content, new Date(r.createdAt)));
         } catch (err) {
             this.logger.error("TaskRepository", "getComments failed", err);
             return [];
         } finally { res.conn.release(); }
     }
 
-    async addComment(taskId: number, userId: number, content: string): Promise<CommentDto | null> {
+    async addComment(taskId: number, userId: number, content: string): Promise<Comment | null> {
         const res = await this.db.getWriteConnection();
         if (!res) return null;
         try {
@@ -278,7 +276,7 @@ export class TaskRepository implements ITaskRepository, ITaskAssigneeRepository,
                 [result.insertId]
             );
             const r = rows[0];
-            return new CommentDto(r.id, r.taskId, r.userId, r.username, r.content, new Date(r.createdAt));
+            return new Comment(r.id, r.taskId, r.userId, r.username, r.content, new Date(r.createdAt));
         } catch (err) {
             this.logger.error("TaskRepository", "addComment failed", err);
             return null;

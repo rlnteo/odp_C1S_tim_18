@@ -1,14 +1,13 @@
 import { Task } from "../../models/Task";
-import { TaskDto } from "../../DTOs/task/TaskDto";
-import { CreateTaskDto } from "../../DTOs/task/CreateTaskDto";
+import { TaskUpdateFields } from "../../types/TaskUpdateFields";
 import { TaskStatus } from "../../enums/TaskStatus";
 
 export interface ITaskRepository {
-    create(dto: CreateTaskDto): Promise<Task>;
-    findById(id: number): Promise<TaskDto | null>;
-    findByProjectId(projectId: number): Promise<TaskDto[]>;
-    findAssignedToUser(userId: number): Promise<TaskDto[]>;
-    update(id: number, fields: Partial<Task>): Promise<boolean>;
+    create(task: Task): Promise<Task>;
+    findById(id: number): Promise<Task | null>;
+    findByProjectId(projectId: number): Promise<Task[]>;
+    findAssignedToUser(userId: number): Promise<Task[]>;
+    update(id: number, fields: TaskUpdateFields): Promise<boolean>;
     updateStatus(id: number, status: TaskStatus): Promise<boolean>;
     delete(id: number): Promise<boolean>;
 }

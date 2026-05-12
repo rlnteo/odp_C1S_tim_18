@@ -80,6 +80,7 @@ CREATE TABLE tasks (
     description TEXT,
     priority ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
     status ENUM('todo','in_progress','done') DEFAULT 'todo',
+    estimatedHours DECIMAL(5,1) NOT NULL DEFAULT 1.0,
     dueDate DATETIME,
     createdBy INT UNSIGNED NOT NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -1,12 +1,11 @@
 import { Team } from "../../models/Team";
-import { TeamDto } from "../../DTOs/team/TeamDto";
-import { CreateTeamDto } from "../../DTOs/team/CreateTeamDto";
+import { TeamUpdateFields } from "../../types/TeamUpdateFields";
 
 export interface ITeamRepository {
-    create(dto: CreateTeamDto): Promise<Team>;
-    findById(id: number, requesterId: number): Promise<TeamDto | null>;
-    findAll(): Promise<TeamDto[]>;
-    findByUserId(userId: number): Promise<TeamDto[]>;
-    update(id: number, fields: Partial<Team>): Promise<boolean>;
+    create(team: Team): Promise<Team>;
+    findById(id: number, requesterId: number): Promise<Team | null>;
+    findAll(): Promise<Team[]>;
+    findByUserId(userId: number): Promise<Team[]>;
+    update(id: number, fields: TeamUpdateFields): Promise<boolean>;
     delete(id: number): Promise<boolean>;
 }

@@ -1,5 +1,7 @@
 import { TaskStatus } from "../enums/TaskStatus";
 import { ProjectPriority } from "../enums/ProjectPriority";
+import { Assignee } from "./Assignee";
+import { Comment } from "./Comment";
 
 export class Task {
     constructor(
@@ -13,5 +15,7 @@ export class Task {
         public dueDate: Date | null = null,
         public createdBy: number = 0,
         public createdAt: Date = new Date(),
+        public assignees: Assignee[] = [],
+        public comments: Comment[] = [],
     ) { }
 }

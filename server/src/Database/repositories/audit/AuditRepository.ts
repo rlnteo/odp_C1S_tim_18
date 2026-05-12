@@ -1,8 +1,6 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IAuditRepository } from "../../../Domain/repositories/audit/IAuditRepository";
 import { AuditLog } from "../../../Domain/models/AuditLog";
-import { AuditLogDto } from "../../../Domain/DTOs/audit/AuditLogDto";
-import { PaginatedAuditDto } from "../../../Domain/DTOs/audit/PaginatedAuditDto";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
@@ -14,9 +12,9 @@ export class AuditRepository implements IAuditRepository {
         private readonly logger: ILoggerService,
     ) { }
 
-    private map(r: RowDataPacket): AuditLogDto {
-        return new AuditLogDto(
-            r.id, r.userId, r.username ?? null,
+    private map(r: RowDataPacket): AuditLog {
+        return new AuditLog(
+            r.id, r.userId ?? null,
             r.actionType, r.entityType ?? null,
             r.entityId ?? null, r.description ?? null,
             r.ipAddress ?? null, new Date(r.createdAt),
@@ -39,9 +37,9 @@ export class AuditRepository implements IAuditRepository {
         } finally { res.conn.release(); }
     }
 
-    async findAll(page = 1, limit = 20): Promise<PaginatedAuditDto> {
+    async findAll(page = 1, limit = 20): Promise<{ items: AuditLog[]; total: number }> {
         const res = await this.db.getReadConnection();
-        if (!res) return new PaginatedAuditDto();
+        if (!res) return { items: [], total: 0 };
         const offset = (page - 1) * limit;
         try {
             const [[countRow]] = await res.conn.execute<CountRow[]>(
@@ -55,10 +53,10 @@ export class AuditRepository implements IAuditRepository {
          LIMIT ? OFFSET ?`,
                 [limit, offset]
             );
-            return new PaginatedAuditDto(rows.map((r) => this.map(r)), countRow.total, page, limit);
+            return { items: rows.map((r) => this.map(r)), total: countRow.total };
         } catch (err) {
             this.logger.error("AuditRepository", "findAll failed", err);
-            return new PaginatedAuditDto();
+            return { items: [], total: 0 };
         } finally { res.conn.release(); }
     }
 }

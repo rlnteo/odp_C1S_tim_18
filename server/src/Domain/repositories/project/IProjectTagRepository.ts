@@ -1,8 +1,8 @@
-import { TagDto } from "../../DTOs/project/TagDto";
+import { Tag } from "../../models/Tag";
 
 export interface IProjectTagRepository {
-    getAllTags(): Promise<TagDto[]>;
-    getProjectTags(projectId: number): Promise<TagDto[]>;
+    getAllTags(): Promise<Tag[]>;
+    getProjectTags(projectId: number): Promise<Tag[]>;
     addTag(projectId: number, tagId: number): Promise<boolean>;
     removeTag(projectId: number, tagId: number): Promise<boolean>;
 }

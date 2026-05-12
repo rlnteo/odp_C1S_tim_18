@@ -1,10 +1,8 @@
-// TODO: Replace Entity, EntityDto, CreateEntityDto with your domain types
+// TODO: Replace Entity with your domain types
 // TODO: Replace table name "entities" with your actual table name
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IEntityRepository } from "../../../Domain/repositories/entity/IEntityRepository";
 import { Entity } from "../../../Domain/models/Entity";
-import { EntityDto } from "../../../Domain/DTOs/entity/EntityDto";
-import { CreateEntityDto } from "../../../Domain/DTOs/entity/CreateEntityDto";
 import { EntityStatus } from "../../../Domain/enums/EntityStatus";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -15,11 +13,11 @@ export class EntityRepository implements IEntityRepository {
     private readonly logger: ILoggerService,
   ) { }
 
-  private map(r: RowDataPacket): EntityDto {
-    return new EntityDto(r.id, r.userId, r.status as EntityStatus, new Date(r.createdAt));
+  private map(r: RowDataPacket): Entity {
+    return new Entity(r.id, r.userId, r.status as EntityStatus, new Date(r.createdAt));
   }
 
-  async findById(id: number): Promise<EntityDto | null> {
+  async findById(id: number): Promise<Entity | null> {
     const res = await this.db.getReadConnection();
     if (!res) return null;
     try {
@@ -31,7 +29,7 @@ export class EntityRepository implements IEntityRepository {
     } finally { res.conn.release(); }
   }
 
-  async findAll(page = 1, limit = 20): Promise<EntityDto[]> {
+  async findAll(page = 1, limit = 20): Promise<Entity[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
     const offset = (page - 1) * limit;
@@ -46,7 +44,7 @@ export class EntityRepository implements IEntityRepository {
     } finally { res.conn.release(); }
   }
 
-  async findByUserId(userId: number): Promise<EntityDto[]> {
+  async findByUserId(userId: number): Promise<Entity[]> {
     const res = await this.db.getReadConnection();
     if (!res) return [];
     try {
@@ -60,16 +58,16 @@ export class EntityRepository implements IEntityRepository {
     } finally { res.conn.release(); }
   }
 
-  async create(dto: CreateEntityDto): Promise<Entity> {
+  async create(entity: Entity): Promise<Entity> {
     const res = await this.db.getWriteConnection();
     if (!res) return new Entity();
     try {
       const [result] = await res.conn.execute<ResultSetHeader>(
         `INSERT INTO entities (userId) VALUES (?)`,
-        [dto.userId]
+        [entity.userId]
       );
       if (result.insertId === 0) return new Entity();
-      return new Entity(result.insertId, dto.userId);
+      return new Entity(result.insertId, entity.userId);
     } catch (err) {
       this.logger.error("EntityRepository", "create failed", err);
       return new Entity();

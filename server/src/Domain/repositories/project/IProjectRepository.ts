@@ -1,12 +1,11 @@
 import { Project } from "../../models/Project";
-import { ProjectDto } from "../../DTOs/project/ProjectDto";
-import { CreateProjectDto } from "../../DTOs/project/CreateProjectDto";
+import { ProjectUpdateFields } from "../../types/ProjectUpdateFields";
 
 export interface IProjectRepository {
-    create(dto: CreateProjectDto): Promise<Project>;
-    findById(id: number, requesterId: number): Promise<ProjectDto | null>;
-    findByTeamId(teamId: number, requesterId: number): Promise<ProjectDto[]>;
-    findWatchedByUserId(userId: number): Promise<ProjectDto[]>;
-    update(id: number, fields: Partial<Project>): Promise<boolean>;
+    create(project: Project): Promise<Project>;
+    findById(id: number, requesterId: number): Promise<Project | null>;
+    findByTeamId(teamId: number, requesterId: number): Promise<Project[]>;
+    findWatchedByUserId(userId: number): Promise<Project[]>;
+    update(id: number, fields: ProjectUpdateFields): Promise<boolean>;
     delete(id: number): Promise<boolean>;
 }

@@ -3,9 +3,8 @@ import { ITeamRepository } from "../../../Domain/repositories/team/ITeamReposito
 import { ITeamMemberRepository } from "../../../Domain/repositories/team/ITeamMemberRepository";
 import { ITeamPermissionRepository } from "../../../Domain/repositories/team/ITeamPermissionRepository";
 import { Team } from "../../../Domain/models/Team";
-import { TeamDto } from "../../../Domain/DTOs/team/TeamDto";
-import { CreateTeamDto } from "../../../Domain/DTOs/team/CreateTeamDto";
-import { TeamMemberDto } from "../../../Domain/DTOs/team/TeamMemberDto";
+import { TeamUpdateFields } from "../../../Domain/types/TeamUpdateFields";
+import { TeamMember } from "../../../Domain/models/TeamMember";
 import { TeamRole } from "../../../Domain/enums/TeamRole";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
@@ -17,34 +16,34 @@ export class TeamRepository implements ITeamRepository,
         private readonly logger: ILoggerService,
     ) { }
 
-    private mapTeam(r: RowDataPacket, role = ""): TeamDto {
-        return new TeamDto(r.id, r.name, r.description, r.avatarUrl, r.createdBy, new Date(r.createdAt), role);
+    private mapTeam(r: RowDataPacket, role = ""): Team {
+        return new Team(r.id, r.name, r.description, r.avatarUrl, r.createdBy, new Date(r.createdAt), role);
     }
 
-    async create(dto: CreateTeamDto): Promise<Team> {
+    async create(team: Team): Promise<Team> {
         const res = await this.db.getWriteConnection();
         if (!res) return new Team();
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO teams (name, description, avatarUrl, createdBy) VALUES (?, ?, ?, ?)`,
-                [dto.name, dto.description, dto.avatarUrl, dto.createdBy]
+                [team.name, team.description, team.avatarUrl, team.createdBy]
             );
             if (result.insertId === 0) return new Team();
 
             // Kreiraj u team_members odmah kao owner
             await res.conn.execute(
                 `INSERT INTO team_members (userId, teamId, role) VALUES (?, ?, 'owner')`,
-                [dto.createdBy, result.insertId]
+                [team.createdBy, result.insertId]
             );
 
-            return new Team(result.insertId, dto.name, dto.description, dto.avatarUrl, dto.createdBy);
+            return new Team(result.insertId, team.name, team.description, team.avatarUrl, team.createdBy);
         } catch (err) {
             this.logger.error("TeamRepository", "create failed", err);
             return new Team();
         } finally { res.conn.release(); }
     }
 
-    async findById(id: number, requesterId: number): Promise<TeamDto | null> {
+    async findById(id: number, requesterId: number): Promise<Team | null> {
         const res = await this.db.getReadConnection();
         if (!res) return null;
         try {
@@ -63,7 +62,7 @@ export class TeamRepository implements ITeamRepository,
         } finally { res.conn.release(); }
     }
 
-    async findAll(): Promise<TeamDto[]> {
+    async findAll(): Promise<Team[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
         try {
@@ -77,7 +76,7 @@ export class TeamRepository implements ITeamRepository,
         } finally { res.conn.release(); }
     }
 
-    async findByUserId(userId: number): Promise<TeamDto[]> {
+    async findByUserId(userId: number): Promise<Team[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
         try {
@@ -96,7 +95,7 @@ export class TeamRepository implements ITeamRepository,
         } finally { res.conn.release(); }
     }
 
-    async update(id: number, fields: Partial<Team>): Promise<boolean> {
+    async update(id: number, fields: TeamUpdateFields): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
         try {
@@ -128,7 +127,7 @@ export class TeamRepository implements ITeamRepository,
         } finally { res.conn.release(); }
     }
 
-    async findMembers(teamId: number): Promise<TeamMemberDto[]> {
+    async findMembers(teamId: number): Promise<TeamMember[]> {
         const res = await this.db.getReadConnection();
         if (!res) return [];
         try {
@@ -140,7 +139,7 @@ export class TeamRepository implements ITeamRepository,
          ORDER BY tm.role DESC, tm.joinedAt ASC`,
                 [teamId]
             );
-            return rows.map((r) => new TeamMemberDto(r.userId, r.username, r.role, new Date(r.joinedAt)));
+            return rows.map((r) => new TeamMember(r.userId, r.username, r.role as TeamRole, new Date(r.joinedAt)));
         } catch (err) {
             this.logger.error("TeamRepository", "findMembers failed", err);
             return [];

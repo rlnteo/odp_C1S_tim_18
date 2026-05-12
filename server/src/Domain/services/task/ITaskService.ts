@@ -1,6 +1,6 @@
 import { TaskDto } from "../../DTOs/task/TaskDto";
 import { CreateTaskDto } from "../../DTOs/task/CreateTaskDto";
-import { CommentDto } from "../../DTOs/task/CommentDto";
+import { TaskUpdateFields } from "../../types/TaskUpdateFields";
 import { TaskStatus } from "../../enums/TaskStatus";
 
 export interface ITaskService {
@@ -8,11 +8,7 @@ export interface ITaskService {
     getTasksByProject(projectId: number): Promise<TaskDto[]>;
     getMyTasks(userId: number): Promise<TaskDto[]>;
     getTaskById(id: number): Promise<TaskDto | null>;
-    updateTask(id: number, fields: Partial<CreateTaskDto>, requesterId: number): Promise<boolean>;
+    updateTask(id: number, fields: TaskUpdateFields, requesterId: number): Promise<boolean>;
     updateStatus(id: number, status: TaskStatus, requesterId: number): Promise<boolean>;
     deleteTask(id: number, requesterId: number): Promise<boolean>;
-    assignUser(taskId: number, userId: number, requesterId: number): Promise<boolean>;
-    unassignUser(taskId: number, userId: number, requesterId: number): Promise<boolean>;
-    addComment(taskId: number, userId: number, content: string): Promise<CommentDto | null>;
-    deleteComment(commentId: number, taskId: number, requesterId: number): Promise<boolean>;
 }
