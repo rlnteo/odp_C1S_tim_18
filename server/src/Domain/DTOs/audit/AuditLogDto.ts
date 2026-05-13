@@ -1,13 +1,13 @@
 export class AuditLogDto {
     constructor(
         public id: number = 0,
-        public userId: number | null = null,
-        public username: string | null = null,
+        public userId: number = 0,
+        public username: string = "",
         public actionType: string = "",
-        public entityType: string | null = null,
-        public entityId: number | null = null,
-        public description: string | null = null,
-        public ipAddress: string | null = null,
+        public entityType: string = "",
+        public entityId: number = 0,
+        public description: string = "",
+        public ipAddress: string = "",
         public createdAt: Date = new Date(),
     ) { }
 }

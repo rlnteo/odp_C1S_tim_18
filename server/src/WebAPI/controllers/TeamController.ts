@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import { ITeamService } from "../../Domain/services/team/ITeamService";
+import { ITeamMemberService } from "../../Domain/services/team/ITeamMemberService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
@@ -8,7 +9,10 @@ import { CreateTeamDto } from "../../Domain/DTOs/team/CreateTeamDto";
 export class TeamController {
     private readonly router = Router();
 
-    public constructor(private readonly teamService: ITeamService) {
+    public constructor(
+        private readonly teamService: ITeamService,
+        private readonly memberService: ITeamMemberService,
+    ) {
         this.router.get("/teams/my", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.getMyTeams.bind(this));
         this.router.get("/teams", authenticate, authorize(UserRole.ADMIN), this.getAll.bind(this));
         this.router.get("/teams/:id", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.getById.bind(this));
@@ -37,7 +41,7 @@ export class TeamController {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const team = await this.teamService.getTeamById(id, req.user!.id);
-        if (!team) { res.status(404).json({ success: false, message: "Team not found" }); return; }
+        if (!team || team.id === 0) { res.status(404).json({ success: false, message: "Team not found" }); return; }
         res.status(200).json({ success: true, data: team });
     }
 
@@ -46,7 +50,7 @@ export class TeamController {
         if (!name) { res.status(400).json({ success: false, message: "Name is required" }); return; }
         const dto = new CreateTeamDto(name, description ?? "", avatarUrl ?? "", req.user!.id);
         const team = await this.teamService.createTeam(dto);
-        if (!team) { res.status(500).json({ success: false, message: "Failed to create team" }); return; }
+        if (!team || team.id === 0) { res.status(500).json({ success: false, message: "Failed to create team" }); return; }
         res.status(201).json({ success: true, data: team });
     }
 
@@ -67,7 +71,7 @@ export class TeamController {
     private async getMembers(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
-        const members = await this.teamService.getMembers(id);
+        const members = await this.memberService.getMembers(id);
         res.status(200).json({ success: true, data: members });
     }
 
@@ -76,7 +80,7 @@ export class TeamController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const { username } = req.body;
         if (!username) { res.status(400).json({ success: false, message: "Username is required" }); return; }
-        const ok = await this.teamService.addMember(id, username, req.user!.id);
+        const ok = await this.memberService.addMember(id, username, req.user!.id);
         res.status(ok ? 200 : 400).json({ success: ok, message: ok ? undefined : "Cannot add member" });
     }
 
@@ -86,7 +90,7 @@ export class TeamController {
         if (isNaN(id) || isNaN(userId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const { role } = req.body;
         if (!role) { res.status(400).json({ success: false, message: "Role is required" }); return; }
-        const ok = await this.teamService.updateMemberRole(id, userId, role, req.user!.id);
+        const ok = await this.memberService.updateMemberRole(id, userId, role, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
 
@@ -94,14 +98,14 @@ export class TeamController {
         const id = parseInt(req.params.id as string, 10);
         const userId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(userId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
-        const ok = await this.teamService.removeMember(id, userId, req.user!.id);
+        const ok = await this.memberService.removeMember(id, userId, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
 
     private async leaveTeam(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
-        const ok = await this.teamService.leaveTeam(id, req.user!.id);
+        const ok = await this.memberService.leaveTeam(id, req.user!.id);
         res.status(ok ? 200 : 400).json({ success: ok, message: ok ? undefined : "Owner cannot leave — transfer ownership first" });
     }
 

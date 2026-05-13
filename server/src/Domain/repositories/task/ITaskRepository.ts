@@ -4,7 +4,7 @@ import { TaskStatus } from "../../enums/TaskStatus";
 
 export interface ITaskRepository {
     create(task: Task): Promise<Task>;
-    findById(id: number): Promise<Task | null>;
+    findById(id: number): Promise<Task>;
     findByProjectId(projectId: number): Promise<Task[]>;
     findAssignedToUser(userId: number): Promise<Task[]>;
     update(id: number, fields: TaskUpdateFields): Promise<boolean>;

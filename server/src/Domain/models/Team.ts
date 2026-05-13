@@ -6,6 +6,6 @@ export class Team {
         public avatarUrl: string = "",
         public createdBy: number = 0,
         public createdAt: Date = new Date(),
-        public role: string = "",   // uloga trenutnog korisnika u timu
+        public role: string = "",   
     ) { }
 }

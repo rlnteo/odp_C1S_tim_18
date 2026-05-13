@@ -12,7 +12,7 @@ export class Task {
         public priority: ProjectPriority = ProjectPriority.MEDIUM,
         public status: TaskStatus = TaskStatus.TODO,
         public estimatedHours: number = 1,
-        public dueDate: Date | null = null,
+        public dueDate: Date = new Date(0),
         public createdBy: number = 0,
         public createdAt: Date = new Date(),
         public assignees: Assignee[] = [],

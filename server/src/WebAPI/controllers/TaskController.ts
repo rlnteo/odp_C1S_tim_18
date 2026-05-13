@@ -1,5 +1,7 @@
 import { Request, Response, Router } from "express";
 import { ITaskService } from "../../Domain/services/task/ITaskService";
+import { ITaskAssigneeService } from "../../Domain/services/task/ITaskAssigneeService";
+import { ITaskCommentService } from "../../Domain/services/task/ITaskCommentService";
 import { authenticate } from "../../Middlewares/authentification/AuthMiddleware";
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
@@ -10,7 +12,11 @@ import { ProjectPriority } from "../../Domain/enums/ProjectPriority";
 export class TaskController {
     private readonly router = Router();
 
-    public constructor(private readonly taskService: ITaskService) {
+    public constructor(
+        private readonly taskService: ITaskService,
+        private readonly assigneeService: ITaskAssigneeService,
+        private readonly commentService: ITaskCommentService,
+    ) {
         this.router.get("/tasks/my", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.getMyTasks.bind(this));
         this.router.get("/projects/:projectId/tasks", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.getByProject.bind(this));
         this.router.post("/projects/:projectId/tasks", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.create.bind(this));
@@ -46,11 +52,11 @@ export class TaskController {
             (priority as ProjectPriority) ?? ProjectPriority.MEDIUM,
             (status as TaskStatus) ?? TaskStatus.TODO,
             Number(estimatedHours),
-            dueDate ? new Date(dueDate as string) : null,
+            dueDate ? new Date(dueDate as string) : undefined,
             req.user!.id,
         );
         const task = await this.taskService.createTask(dto);
-        if (!task) { res.status(500).json({ success: false, message: "Failed to create task" }); return; }
+        if (!task || task.id === 0) { res.status(500).json({ success: false, message: "Failed to create task" }); return; }
         res.status(201).json({ success: true, data: task });
     }
 
@@ -58,7 +64,7 @@ export class TaskController {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const task = await this.taskService.getTaskById(id);
-        if (!task) { res.status(404).json({ success: false, message: "Task not found" }); return; }
+        if (!task || task.id === 0) { res.status(404).json({ success: false, message: "Task not found" }); return; }
         res.status(200).json({ success: true, data: task });
     }
 
@@ -89,7 +95,7 @@ export class TaskController {
         const id = parseInt(req.params.id as string, 10);
         const userId = parseInt(req.body.userId as string, 10);
         if (isNaN(id) || isNaN(userId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
-        const ok = await this.taskService.assignUser(id, userId, req.user!.id);
+        const ok = await this.assigneeService.assignUser(id, userId, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
 
@@ -97,7 +103,7 @@ export class TaskController {
         const id = parseInt(req.params.id as string, 10);
         const userId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(userId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
-        const ok = await this.taskService.unassignUser(id, userId, req.user!.id);
+        const ok = await this.assigneeService.unassignUser(id, userId, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
 
@@ -106,8 +112,8 @@ export class TaskController {
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const { content } = req.body;
         if (!content) { res.status(400).json({ success: false, message: "Content is required" }); return; }
-        const comment = await this.taskService.addComment(id, req.user!.id, content as string);
-        if (!comment) { res.status(403).json({ success: false, message: "Must be assigned to comment" }); return; }
+        const comment = await this.commentService.addComment(id, req.user!.id, content as string);
+        if (!comment || comment.id === 0) { res.status(403).json({ success: false, message: "Must be assigned to comment" }); return; }
         res.status(201).json({ success: true, data: comment });
     }
 
@@ -115,7 +121,7 @@ export class TaskController {
         const id = parseInt(req.params.id as string, 10);
         const commentId = parseInt(req.params.commentId as string, 10);
         if (isNaN(id) || isNaN(commentId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
-        const ok = await this.taskService.deleteComment(commentId, id, req.user!.id);
+        const ok = await this.commentService.deleteComment(commentId, id, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
 

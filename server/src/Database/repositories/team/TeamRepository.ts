@@ -1,16 +1,11 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITeamRepository } from "../../../Domain/repositories/team/ITeamRepository";
-import { ITeamMemberRepository } from "../../../Domain/repositories/team/ITeamMemberRepository";
-import { ITeamPermissionRepository } from "../../../Domain/repositories/team/ITeamPermissionRepository";
 import { Team } from "../../../Domain/models/Team";
 import { TeamUpdateFields } from "../../../Domain/types/TeamUpdateFields";
-import { TeamMember } from "../../../Domain/models/TeamMember";
-import { TeamRole } from "../../../Domain/enums/TeamRole";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
-export class TeamRepository implements ITeamRepository,
-    ITeamMemberRepository, ITeamPermissionRepository {
+export class TeamRepository implements ITeamRepository {
     public constructor(
         private readonly db: DbManager,
         private readonly logger: ILoggerService,
@@ -29,13 +24,10 @@ export class TeamRepository implements ITeamRepository,
                 [team.name, team.description, team.avatarUrl, team.createdBy]
             );
             if (result.insertId === 0) return new Team();
-
-            // Kreiraj u team_members odmah kao owner
             await res.conn.execute(
                 `INSERT INTO team_members (userId, teamId, role) VALUES (?, ?, 'owner')`,
                 [team.createdBy, result.insertId]
             );
-
             return new Team(result.insertId, team.name, team.description, team.avatarUrl, team.createdBy);
         } catch (err) {
             this.logger.error("TeamRepository", "create failed", err);
@@ -43,22 +35,22 @@ export class TeamRepository implements ITeamRepository,
         } finally { res.conn.release(); }
     }
 
-    async findById(id: number, requesterId: number): Promise<Team | null> {
+    async findById(id: number, requesterId: number): Promise<Team> {
         const res = await this.db.getReadConnection();
-        if (!res) return null;
+        if (!res) return new Team();
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
                 `SELECT t.*, tm.role AS myRole
-         FROM teams t
-         LEFT JOIN team_members tm ON tm.teamId = t.id AND tm.userId = ?
-         WHERE t.id = ?`,
+                 FROM teams t
+                 LEFT JOIN team_members tm ON tm.teamId = t.id AND tm.userId = ?
+                 WHERE t.id = ?`,
                 [requesterId, id]
             );
-            if (rows.length === 0) return null;
+            if (rows.length === 0) return new Team();
             return this.mapTeam(rows[0], rows[0].myRole ?? "");
         } catch (err) {
             this.logger.error("TeamRepository", "findById failed", err);
-            return null;
+            return new Team();
         } finally { res.conn.release(); }
     }
 
@@ -82,10 +74,10 @@ export class TeamRepository implements ITeamRepository,
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
                 `SELECT t.*, tm.role AS myRole
-         FROM teams t
-         JOIN team_members tm ON tm.teamId = t.id
-         WHERE tm.userId = ?
-         ORDER BY t.createdAt DESC`,
+                 FROM teams t
+                 JOIN team_members tm ON tm.teamId = t.id
+                 WHERE tm.userId = ?
+                 ORDER BY t.createdAt DESC`,
                 [userId]
             );
             return rows.map((r) => this.mapTeam(r, r.myRole));
@@ -123,100 +115,6 @@ export class TeamRepository implements ITeamRepository,
             return result.affectedRows > 0;
         } catch (err) {
             this.logger.error("TeamRepository", "delete failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async findMembers(teamId: number): Promise<TeamMember[]> {
-        const res = await this.db.getReadConnection();
-        if (!res) return [];
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT u.id AS userId, u.username, tm.role, tm.joinedAt
-         FROM team_members tm
-         JOIN users u ON u.id = tm.userId
-         WHERE tm.teamId = ?
-         ORDER BY tm.role DESC, tm.joinedAt ASC`,
-                [teamId]
-            );
-            return rows.map((r) => new TeamMember(r.userId, r.username, r.role as TeamRole, new Date(r.joinedAt)));
-        } catch (err) {
-            this.logger.error("TeamRepository", "findMembers failed", err);
-            return [];
-        } finally { res.conn.release(); }
-    }
-
-    async addMember(teamId: number, userId: number, role: TeamRole): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
-        try {
-            await res.conn.execute(
-                `INSERT INTO team_members (userId, teamId, role) VALUES (?, ?, ?)`,
-                [userId, teamId, role]
-            );
-            return true;
-        } catch (err) {
-            this.logger.error("TeamRepository", "addMember failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async updateMemberRole(teamId: number, userId: number, role: TeamRole): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
-        try {
-            const [result] = await res.conn.execute<ResultSetHeader>(
-                `UPDATE team_members SET role = ? WHERE teamId = ? AND userId = ?`,
-                [role, teamId, userId]
-            );
-            return result.affectedRows > 0;
-        } catch (err) {
-            this.logger.error("TeamRepository", "updateMemberRole failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async removeMember(teamId: number, userId: number): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
-        try {
-            const [result] = await res.conn.execute<ResultSetHeader>(
-                `DELETE FROM team_members WHERE teamId = ? AND userId = ?`,
-                [teamId, userId]
-            );
-            return result.affectedRows > 0;
-        } catch (err) {
-            this.logger.error("TeamRepository", "removeMember failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async isMember(teamId: number, userId: number): Promise<boolean> {
-        const res = await this.db.getReadConnection();
-        if (!res) return false;
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT 1 FROM team_members WHERE teamId = ? AND userId = ?`,
-                [teamId, userId]
-            );
-            return rows.length > 0;
-        } catch (err) {
-            this.logger.error("TeamRepository", "isMember failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async isOwner(teamId: number, userId: number): Promise<boolean> {
-        const res = await this.db.getReadConnection();
-        if (!res) return false;
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT 1 FROM team_members WHERE teamId = ? AND userId = ? AND role = 'owner'`,
-                [teamId, userId]
-            );
-            return rows.length > 0;
-        } catch (err) {
-            this.logger.error("TeamRepository", "isOwner failed", err);
             return false;
         } finally { res.conn.release(); }
     }

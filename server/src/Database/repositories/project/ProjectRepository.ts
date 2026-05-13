@@ -1,8 +1,5 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IProjectRepository } from "../../../Domain/repositories/project/IProjectRepository";
-import { IProjectTagRepository } from "../../../Domain/repositories/project/IProjectTagRepository";
-import { IProjectWatcherRepository } from "../../../Domain/repositories/project/IProjectWatcherRepository";
-import { IProjectPermissionRepository } from "../../../Domain/repositories/project/IProjectPermissionRepository";
 import { Project } from "../../../Domain/models/Project";
 import { ProjectUpdateFields } from "../../../Domain/types/ProjectUpdateFields";
 import { Tag } from "../../../Domain/models/Tag";
@@ -11,9 +8,7 @@ import { ProjectPriority } from "../../../Domain/enums/ProjectPriority";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
-export class ProjectRepository implements IProjectRepository, IProjectTagRepository,
-    IProjectWatcherRepository,
-    IProjectPermissionRepository {
+export class ProjectRepository implements IProjectRepository {
     public constructor(
         private readonly db: DbManager,
         private readonly logger: ILoggerService,
@@ -28,13 +23,28 @@ export class ProjectRepository implements IProjectRepository, IProjectTagReposit
         );
     }
 
+    private async getProjectTags(projectId: number): Promise<Tag[]> {
+        const res = await this.db.getReadConnection();
+        if (!res) return [];
+        try {
+            const [rows] = await res.conn.execute<RowDataPacket[]>(
+                `SELECT t.* FROM tags t JOIN project_tags pt ON pt.tagId = t.id WHERE pt.projectId = ?`,
+                [projectId]
+            );
+            return rows.map((r) => new Tag(r.id, r.name));
+        } catch (err) {
+            this.logger.error("ProjectRepository", "getProjectTags failed", err);
+            return [];
+        } finally { res.conn.release(); }
+    }
+
     async create(project: Project): Promise<Project> {
         const res = await this.db.getWriteConnection();
         if (!res) return new Project();
         try {
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO projects (teamId, name, description, deadline, status, priority, createdBy)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [project.teamId, project.name, project.description, project.deadline, project.status, project.priority, project.createdBy]
             );
             if (result.insertId === 0) return new Project();
@@ -45,22 +55,22 @@ export class ProjectRepository implements IProjectRepository, IProjectTagReposit
         } finally { res.conn.release(); }
     }
 
-    async findById(id: number, requesterId: number): Promise<Project | null> {
+    async findById(id: number, requesterId: number): Promise<Project> {
         const res = await this.db.getReadConnection();
-        if (!res) return null;
+        if (!res) return new Project();
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
                 `SELECT p.*,
-                EXISTS(SELECT 1 FROM project_watchers WHERE projectId = p.id AND userId = ?) AS isWatching
-         FROM projects p WHERE p.id = ?`,
+                 EXISTS(SELECT 1 FROM project_watchers WHERE projectId = p.id AND userId = ?) AS isWatching
+                 FROM projects p WHERE p.id = ?`,
                 [requesterId, id]
             );
-            if (rows.length === 0) return null;
+            if (rows.length === 0) return new Project();
             const tags = await this.getProjectTags(id);
             return this.mapProject(rows[0], tags, !!rows[0].isWatching);
         } catch (err) {
             this.logger.error("ProjectRepository", "findById failed", err);
-            return null;
+            return new Project();
         } finally { res.conn.release(); }
     }
 
@@ -70,8 +80,8 @@ export class ProjectRepository implements IProjectRepository, IProjectTagReposit
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
                 `SELECT p.*,
-                EXISTS(SELECT 1 FROM project_watchers WHERE projectId = p.id AND userId = ?) AS isWatching
-         FROM projects p WHERE p.teamId = ? ORDER BY p.createdAt DESC`,
+                 EXISTS(SELECT 1 FROM project_watchers WHERE projectId = p.id AND userId = ?) AS isWatching
+                 FROM projects p WHERE p.teamId = ? ORDER BY p.createdAt DESC`,
                 [requesterId, teamId]
             );
             return Promise.all(rows.map(async (r) => {
@@ -90,8 +100,8 @@ export class ProjectRepository implements IProjectRepository, IProjectTagReposit
         try {
             const [rows] = await res.conn.execute<RowDataPacket[]>(
                 `SELECT p.* FROM projects p
-         JOIN project_watchers pw ON pw.projectId = p.id
-         WHERE pw.userId = ? ORDER BY pw.watchingSince DESC`,
+                 JOIN project_watchers pw ON pw.projectId = p.id
+                 WHERE pw.userId = ? ORDER BY pw.watchingSince DESC`,
                 [userId]
             );
             return Promise.all(rows.map(async (r) => {
@@ -112,8 +122,9 @@ export class ProjectRepository implements IProjectRepository, IProjectTagReposit
             if (entries.length === 0) return false;
             const setClause = entries.map(([k]) => `${k} = ?`).join(", ");
             const values = entries.map(([, v]) => v);
-            const sql: string = `UPDATE projects SET ${setClause} WHERE id = ?`;
-            const [result] = await res.conn.query<ResultSetHeader>(sql, [...values, id]);
+            const [result] = await res.conn.query<ResultSetHeader>(
+                `UPDATE projects SET ${setClause} WHERE id = ?`, [...values, id]
+            );
             return result.affectedRows > 0;
         } catch (err) {
             this.logger.error("ProjectRepository", "update failed", err);
@@ -131,125 +142,6 @@ export class ProjectRepository implements IProjectRepository, IProjectTagReposit
             return result.affectedRows > 0;
         } catch (err) {
             this.logger.error("ProjectRepository", "delete failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async getAllTags(): Promise<Tag[]> {
-        const res = await this.db.getReadConnection();
-        if (!res) return [];
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(`SELECT * FROM tags ORDER BY name ASC`);
-            return rows.map((r) => new Tag(r.id, r.name));
-        } catch (err) {
-            this.logger.error("ProjectRepository", "getAllTags failed", err);
-            return [];
-        } finally { res.conn.release(); }
-    }
-
-    async getProjectTags(projectId: number): Promise<Tag[]> {
-        const res = await this.db.getReadConnection();
-        if (!res) return [];
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT t.* FROM tags t JOIN project_tags pt ON pt.tagId = t.id WHERE pt.projectId = ?`,
-                [projectId]
-            );
-            return rows.map((r) => new Tag(r.id, r.name));
-        } catch (err) {
-            this.logger.error("ProjectRepository", "getProjectTags failed", err);
-            return [];
-        } finally { res.conn.release(); }
-    }
-
-    async addTag(projectId: number, tagId: number): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
-        try {
-            await res.conn.execute(
-                `INSERT IGNORE INTO project_tags (projectId, tagId) VALUES (?, ?)`,
-                [projectId, tagId]
-            );
-            return true;
-        } catch (err) {
-            this.logger.error("ProjectRepository", "addTag failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async removeTag(projectId: number, tagId: number): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
-        try {
-            const [result] = await res.conn.execute<ResultSetHeader>(
-                `DELETE FROM project_tags WHERE projectId = ? AND tagId = ?`, [projectId, tagId]
-            );
-            return result.affectedRows > 0;
-        } catch (err) {
-            this.logger.error("ProjectRepository", "removeTag failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async watchProject(projectId: number, userId: number): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
-        try {
-            await res.conn.execute(
-                `INSERT IGNORE INTO project_watchers (userId, projectId) VALUES (?, ?)`,
-                [userId, projectId]
-            );
-            return true;
-        } catch (err) {
-            this.logger.error("ProjectRepository", "watchProject failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async unwatchProject(projectId: number, userId: number): Promise<boolean> {
-        const res = await this.db.getWriteConnection();
-        if (!res) return false;
-        try {
-            const [result] = await res.conn.execute<ResultSetHeader>(
-                `DELETE FROM project_watchers WHERE projectId = ? AND userId = ?`, [projectId, userId]
-            );
-            return result.affectedRows > 0;
-        } catch (err) {
-            this.logger.error("ProjectRepository", "unwatchProject failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async isOwnerOfTeam(projectId: number, userId: number): Promise<boolean> {
-        const res = await this.db.getReadConnection();
-        if (!res) return false;
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT 1 FROM projects p
-         JOIN team_members tm ON tm.teamId = p.teamId
-         WHERE p.id = ? AND tm.userId = ? AND tm.role = 'owner'`,
-                [projectId, userId]
-            );
-            return rows.length > 0;
-        } catch (err) {
-            this.logger.error("ProjectRepository", "isOwnerOfTeam failed", err);
-            return false;
-        } finally { res.conn.release(); }
-    }
-
-    async isMemberOfTeam(projectId: number, userId: number): Promise<boolean> {
-        const res = await this.db.getReadConnection();
-        if (!res) return false;
-        try {
-            const [rows] = await res.conn.execute<RowDataPacket[]>(
-                `SELECT 1 FROM projects p
-         JOIN team_members tm ON tm.teamId = p.teamId
-         WHERE p.id = ? AND tm.userId = ?`,
-                [projectId, userId]
-            );
-            return rows.length > 0;
-        } catch (err) {
-            this.logger.error("ProjectRepository", "isMemberOfTeam failed", err);
             return false;
         } finally { res.conn.release(); }
     }
