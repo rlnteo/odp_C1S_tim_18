@@ -21,7 +21,6 @@ export class ProjectController {
         private readonly tagService: IProjectTagService,
         private readonly watcherService: IProjectWatcherService,
     ) {
-        this.router.get("/tags", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.getAllTags.bind(this));
         this.router.get("/projects/watching", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.getWatching.bind(this));
         this.router.get("/teams/:teamId/projects", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.getByTeam.bind(this));
         this.router.post("/teams/:teamId/projects", authenticate, authorize(UserRole.USER, UserRole.ADMIN), this.create.bind(this));

@@ -45,7 +45,7 @@ const slave2Pool: Pool = mysql.createPool({
 interface NodeInfo { name: string; pool: Pool; node: DbNode; }
 
 export class DbManager {
-  private readonly master: NodeInfo;
+  private master: NodeInfo;
   private readonly slaves: NodeInfo[];
   private slaveRrIndex: number = 0;
   private healthTimer: NodeJS.Timeout | null = null;
@@ -142,7 +142,26 @@ export class DbManager {
     }
   }
 
+  public promoteSlaveToMaster(slaveIndex: number): void {
+    const slave = this.slaves[slaveIndex];
+    if (!slave) {
+      this.logger.error("DB", `Invalid slave index: ${slaveIndex}`);
+      return;
+    }
+    this.logger.warn("DB", `Promoting ${slave.name} to master`);
+    this.master = {
+      name: `master(was-${slave.name})`,
+      pool: slave.pool,
+      node: slave.node,
+    };
+    this.master.node.status = NodeStatus.HEALTHY;
+    slave.node.status = NodeStatus.OFFLINE;
+    this.logger.warn("DB", `Failover complete: ${slave.name} is now master`);
+}
+
+
   public getNodes(): DbNode[] { return [this.master.node, ...this.slaves.map((s) => s.node)]; }
   public getSlaveRrIndex(): number { return this.slaveRrIndex; }
   public stop(): void { if (this.healthTimer) clearInterval(this.healthTimer); }
+  
 }

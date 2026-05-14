@@ -121,4 +121,19 @@ export class UserRepository implements IUserRepository {
       return false;
     } finally { res.conn.release(); }
   }
+
+  async updateRole(id: number, role: UserRole): Promise<boolean> {
+  const res = await this.db.getWriteConnection();
+  if (!res) return false;
+  try {
+    const [result] = await res.conn.execute<ResultSetHeader>(
+      `UPDATE users SET role = ? WHERE id = ?`,
+      [role, id]
+    );
+    return result.affectedRows > 0;
+  } catch (err) {
+    this.logger.error("UserRepository", "updateRole failed", err);
+    return false;
+  } finally { res.conn.release(); }
+}
 }

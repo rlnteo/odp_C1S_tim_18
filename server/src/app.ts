@@ -51,6 +51,7 @@ import { TeamController } from "./WebAPI/controllers/TeamController";
 import { ProjectController } from "./WebAPI/controllers/ProjectController";
 import { TaskController } from "./WebAPI/controllers/TaskController";
 import { AuditController } from "./WebAPI/controllers/AuditController";
+import { TagController } from "./WebAPI/controllers/TagController";
 
 export const logger = new ConsoleLoggerService();
 export const db = new DbManager(logger);
@@ -104,6 +105,7 @@ app.use("/api/v1", new HealthController(healthService).getRouter());
 app.use("/api/v1", new StatisticsController(healthService).getRouter());
 app.use("/api/v1", new TeamController(teamService, teamMemberService).getRouter());
 app.use("/api/v1", new ProjectController(projectService, projectTagService, projectWatcherService).getRouter());
+app.use("/api/v1", new TagController(projectTagService).getRouter());
 app.use("/api/v1", new TaskController(taskService, taskAssigneeService, taskCommentService).getRouter());
 app.use("/api/v1", new AuditController(auditService).getRouter());
 

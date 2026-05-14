@@ -1,4 +1,4 @@
-import { ValidationResult } from "../../../Domain/types/ValidationResult";
+import { ValidationResult } from "../../../../Domain/types/ValidationResult";
 
 export const validateCreateTeam = (
   name: string,

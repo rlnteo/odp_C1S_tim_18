@@ -30,4 +30,13 @@ export class ProjectTagService implements IProjectTagService {
         if (!isOwner) return false;
         return this.tagRepo.removeTag(projectId, tagId);
     }
+
+    async createTag(name: string): Promise<TagDto> {
+        const tag = await this.tagRepo.createTag(name);
+        return this.toDto(tag);
+    }
+
+    async deleteTag(id: number): Promise<boolean> {
+        return this.tagRepo.deleteTag(id);
+    }
 }

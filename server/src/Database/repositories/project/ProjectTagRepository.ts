@@ -65,4 +65,35 @@ export class ProjectTagRepository implements IProjectTagRepository {
             return false;
         } finally { res.conn.release(); }
     }
+
+    async createTag(name: string): Promise<Tag> {
+        const res = await this.db.getWriteConnection();
+        if (!res) return new Tag();
+        try {
+            const [result] = await res.conn.execute<ResultSetHeader>(
+                `INSERT INTO tags (name) VALUES (?)`,
+                [name]
+            );
+            if (result.insertId === 0) return new Tag();
+            return new Tag(result.insertId, name);
+        } catch (err) {
+            this.logger.error("ProjectTagRepository", "createTag failed", err);
+            return new Tag();
+        } finally { res.conn.release(); }
+    }
+
+    async deleteTag(id: number): Promise<boolean> {
+        const res = await this.db.getWriteConnection();
+        if (!res) return false;
+        try {
+            const [result] = await res.conn.execute<ResultSetHeader>(
+                `DELETE FROM tags WHERE id = ?`,
+                [id]
+            );
+            return result.affectedRows > 0;
+        } catch (err) {
+            this.logger.error("ProjectTagRepository", "deleteTag failed", err);
+            return false;
+        } finally { res.conn.release(); }
+    }
 }

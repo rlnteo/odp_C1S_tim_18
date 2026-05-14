@@ -12,8 +12,8 @@ export const validateCreateProject = (
   priority?: string,
   description?: string,
 ): ValidationResult => {
-  if (!name || name.trim().length < 2 || name.trim().length > 100)
-    return { valid: false, message: "Name must be between 2 and 100 characters" };
+  if (!name || name.trim().length < 2 || name.trim().length > 120)
+    return { valid: false, message: "Name must be between 2 and 120 characters" };
 
   if (!deadline || isNaN(Date.parse(deadline)))
     return { valid: false, message: "Deadline must be a valid date" };

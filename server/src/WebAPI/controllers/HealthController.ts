@@ -22,6 +22,12 @@ export class HealthController {
       authenticate, authorize(UserRole.ADMIN),
       this.runCheck.bind(this)
     );
+
+    
+    this.router.post("/health/failover",
+      authenticate, authorize(UserRole.ADMIN),
+      this.failover.bind(this)
+    );
   }
 
   private ping(_req: Request, res: Response): void {
@@ -42,4 +48,19 @@ export class HealthController {
   }
 
   public getRouter(): Router { return this.router; }
+
+  
+  private async failover(req: Request, res: Response): Promise<void> {
+    const { slaveIndex } = req.body;
+    const index = parseInt(slaveIndex as string, 10);
+    if (isNaN(index) || index < 0) {
+      res.status(400).json({ success: false, message: "Valid slaveIndex is required" });
+      return;
+    }
+    const ok = await this.healthService.promoteSlaveToMaster(index);
+    res.status(ok ? 200 : 500).json({
+      success: ok,
+      message: ok ? "Failover completed successfully" : "Failover failed",
+    });
+  }
 }

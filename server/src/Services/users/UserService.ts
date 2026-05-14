@@ -1,6 +1,7 @@
 import { IUserService } from "../../Domain/services/users/IUserService";
 import { IUserRepository } from "../../Domain/repositories/users/IUserRepository";
 import { UserDto } from "../../Domain/DTOs/users/UserDto";
+import { UserRole } from "../../Domain/enums/UserRole";
 
 export class UserService implements IUserService {
   public constructor(private readonly userRepo: IUserRepository) {}
@@ -18,5 +19,9 @@ export class UserService implements IUserService {
 
   async deactivate(id: number): Promise<boolean> {
     return this.userRepo.deactivate(id);
+  }
+
+  public async updateRole(id: number, role: UserRole): Promise<boolean> {
+    return await this.userRepo.updateRole(id, role);
   }
 }

@@ -62,4 +62,14 @@ export class HealthService implements IHealthService {
       res.conn.release();
     }
   }
+
+    public async promoteSlaveToMaster(slaveIndex: number): Promise<boolean> {
+      try {
+        this.db.promoteSlaveToMaster(slaveIndex);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
 }

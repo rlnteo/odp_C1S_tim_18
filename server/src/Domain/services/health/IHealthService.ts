@@ -5,4 +5,5 @@ export interface IHealthService {
   getDbStatus(): HealthStatusDto;
   runHealthCheck(): Promise<void>;
   getStatistics(): Promise<StatisticsDto>;
+  promoteSlaveToMaster(slaveIndex: number): Promise<boolean>;
 }

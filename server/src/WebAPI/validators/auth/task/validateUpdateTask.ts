@@ -1,6 +1,6 @@
-import { ValidationResult } from "../../../Domain/types/ValidationResult";
-import { TaskStatus } from "../../../Domain/enums/TaskStatus";
-import { ProjectPriority } from "../../../Domain/enums/ProjectPriority";
+import { ValidationResult } from "../../../../Domain/types/ValidationResult";
+import { TaskStatus } from "../../../../Domain/enums/TaskStatus";
+import { ProjectPriority } from "../../../../Domain/enums/ProjectPriority";
 
 const VALID_STATUSES = Object.values(TaskStatus) as string[];
 const VALID_PRIORITIES = Object.values(ProjectPriority) as string[];
@@ -9,14 +9,14 @@ export const validateUpdateTask = (body: Record<string, unknown>): ValidationRes
   const { title, estimatedHours, priority, status, description, dueDate } = body;
 
   if (title !== undefined) {
-    if (typeof title !== "string" || title.trim().length < 2 || title.trim().length > 150)
-      return { valid: false, message: "Title must be between 2 and 150 characters" };
+    if (typeof title !== "string" || title.trim().length < 2 || title.trim().length > 200)
+      return { valid: false, message: "Title must be between 2 and 200 characters" };
   }
 
   if (estimatedHours !== undefined) {
     const hours = Number(estimatedHours);
-    if (isNaN(hours) || hours <= 0 || hours > 10000)
-      return { valid: false, message: "EstimatedHours must be a positive number (max 10000)" };
+    if (isNaN(hours) || hours <= 0.5 || hours > 500)
+      return { valid: false, message: "EstimatedHours must be a positive number (max 500)" };
   }
 
   if (priority !== undefined && !VALID_PRIORITIES.includes(priority as string))
