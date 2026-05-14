@@ -1,7 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { IProjectRepository } from "../../../Domain/repositories/project/IProjectRepository";
 import { Project } from "../../../Domain/models/Project";
-import { ProjectUpdateFields } from "../../../Domain/types/ProjectUpdateFields";
+import { ProjectUpdateFieldsDto } from "../../../Domain/types/ProjectUpdateFieldsDto";
 import { Tag } from "../../../Domain/models/Tag";
 import { ProjectStatus } from "../../../Domain/enums/ProjectStatus";
 import { ProjectPriority } from "../../../Domain/enums/ProjectPriority";
@@ -114,7 +114,7 @@ export class ProjectRepository implements IProjectRepository {
         } finally { res.conn.release(); }
     }
 
-    async update(id: number, fields: ProjectUpdateFields): Promise<boolean> {
+    async update(id: number, fields: ProjectUpdateFieldsDto): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
         try {

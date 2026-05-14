@@ -8,7 +8,7 @@ import { TaskDto } from "../../Domain/DTOs/task/TaskDto";
 import { AssigneeDto } from "../../Domain/DTOs/task/AssigneeDto";
 import { CommentDto } from "../../Domain/DTOs/task/CommentDto";
 import { CreateTaskDto } from "../../Domain/DTOs/task/CreateTaskDto";
-import { TaskUpdateFields } from "../../Domain/types/TaskUpdateFields";
+import { TaskUpdateFieldsDto } from "../../Domain/types/TaskUpdateFieldsDto";
 import { TaskStatus } from "../../Domain/enums/TaskStatus";
 
 export class TaskService implements ITaskService {
@@ -55,7 +55,7 @@ export class TaskService implements ITaskService {
         return this.toDto(task);
     }
 
-    async updateTask(id: number, fields: TaskUpdateFields, requesterId: number): Promise<boolean> {
+    async updateTask(id: number, fields: TaskUpdateFieldsDto, requesterId: number): Promise<boolean> {
         const isOwner = await this.permRepo.isOwnerOfTeam(id, requesterId);
         const isCreator = await this.permRepo.isCreator(id, requesterId);
         if (!isOwner && !isCreator) return false;

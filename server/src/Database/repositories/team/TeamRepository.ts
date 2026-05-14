@@ -1,7 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITeamRepository } from "../../../Domain/repositories/team/ITeamRepository";
 import { Team } from "../../../Domain/models/Team";
-import { TeamUpdateFields } from "../../../Domain/types/TeamUpdateFields";
+import { TeamUpdateFieldsDto } from "../../../Domain/types/TeamUpdateFieldsDto";
 import { DbManager } from "../../connection/DbConnectionPool";
 import { ILoggerService } from "../../../Domain/services/logger/ILoggerService";
 
@@ -87,7 +87,7 @@ export class TeamRepository implements ITeamRepository {
         } finally { res.conn.release(); }
     }
 
-    async update(id: number, fields: TeamUpdateFields): Promise<boolean> {
+    async update(id: number, fields: TeamUpdateFieldsDto): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
         try {

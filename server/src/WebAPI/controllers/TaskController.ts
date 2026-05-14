@@ -8,6 +8,10 @@ import { UserRole } from "../../Domain/enums/UserRole";
 import { CreateTaskDto } from "../../Domain/DTOs/task/CreateTaskDto";
 import { TaskStatus } from "../../Domain/enums/TaskStatus";
 import { ProjectPriority } from "../../Domain/enums/ProjectPriority";
+import { ValidationResult } from "../../Domain/types/ValidationResult";
+import { validateCreateTask } from "../validators/auth/task/validateCreateTask";
+import { validateUpdateTask, validateUpdateTaskStatus } from "../validators/auth/task/validateUpdateTask";
+import { validateAddComment } from "../validators/auth/task/validateAddComment";
 
 export class TaskController {
     private readonly router = Router();
@@ -46,7 +50,8 @@ export class TaskController {
         const projectId = parseInt(req.params.projectId as string, 10);
         if (isNaN(projectId)) { res.status(400).json({ success: false, message: "Invalid projectId" }); return; }
         const { title, description, priority, status, estimatedHours, dueDate } = req.body;
-        if (!title || !estimatedHours) { res.status(400).json({ success: false, message: "Title and estimatedHours are required" }); return; }
+        const v: ValidationResult = validateCreateTask(title ?? "", estimatedHours, priority, status, description, dueDate);
+        if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
         const dto = new CreateTaskDto(
             projectId, title, description ?? "",
             (priority as ProjectPriority) ?? ProjectPriority.MEDIUM,
@@ -71,6 +76,8 @@ export class TaskController {
     private async update(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+        const v: ValidationResult = validateUpdateTask(req.body as Record<string, unknown>);
+        if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
         const ok = await this.taskService.updateTask(id, req.body, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
@@ -79,7 +86,8 @@ export class TaskController {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const { status } = req.body;
-        if (!status) { res.status(400).json({ success: false, message: "Status is required" }); return; }
+        const vs: ValidationResult = validateUpdateTaskStatus(status as string ?? "");
+        if (!vs.valid) { res.status(400).json({ success: false, message: vs.message }); return; }
         const ok = await this.taskService.updateStatus(id, status as TaskStatus, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
@@ -111,7 +119,8 @@ export class TaskController {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const { content } = req.body;
-        if (!content) { res.status(400).json({ success: false, message: "Content is required" }); return; }
+        const vc: ValidationResult = validateAddComment(content as string ?? "");
+        if (!vc.valid) { res.status(400).json({ success: false, message: vc.message }); return; }
         const comment = await this.commentService.addComment(id, req.user!.id, content as string);
         if (!comment || comment.id === 0) { res.status(403).json({ success: false, message: "Must be assigned to comment" }); return; }
         res.status(201).json({ success: true, data: comment });

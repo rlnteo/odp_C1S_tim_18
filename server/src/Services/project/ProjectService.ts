@@ -6,7 +6,7 @@ import { Tag } from "../../Domain/models/Tag";
 import { ProjectDto } from "../../Domain/DTOs/project/ProjectDto";
 import { TagDto } from "../../Domain/DTOs/project/TagDto";
 import { CreateProjectDto } from "../../Domain/DTOs/project/CreateProjectDto";
-import { ProjectUpdateFields } from "../../Domain/types/ProjectUpdateFields";
+import { ProjectUpdateFieldsDto } from "../../Domain/types/ProjectUpdateFieldsDto";
 
 export class ProjectService implements IProjectService {
     public constructor(
@@ -47,7 +47,7 @@ export class ProjectService implements IProjectService {
         return this.toDto(project);
     }
 
-    async updateProject(id: number, fields: ProjectUpdateFields, requesterId: number): Promise<boolean> {
+    async updateProject(id: number, fields: ProjectUpdateFieldsDto, requesterId: number): Promise<boolean> {
         const isOwner = await this.permRepo.isOwnerOfTeam(id, requesterId);
         if (!isOwner) return false;
         return this.projectRepo.update(id, fields);

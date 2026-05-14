@@ -5,6 +5,9 @@ import { authenticate } from "../../Middlewares/authentification/AuthMiddleware"
 import { authorize } from "../../Middlewares/authorization/AuthorizeMiddleware";
 import { UserRole } from "../../Domain/enums/UserRole";
 import { CreateTeamDto } from "../../Domain/DTOs/team/CreateTeamDto";
+import { ValidationResult } from "../../Domain/types/ValidationResult";
+import { validateCreateTeam } from "../validators/auth/team/validateCreateTeam";
+import { validateUpdateTeam, validateAddMember, validateUpdateMemberRole } from "../validators/auth/team/validateUpdateTeam";
 
 export class TeamController {
     private readonly router = Router();
@@ -47,7 +50,8 @@ export class TeamController {
 
     private async create(req: Request, res: Response): Promise<void> {
         const { name, description, avatarUrl } = req.body;
-        if (!name) { res.status(400).json({ success: false, message: "Name is required" }); return; }
+        const v: ValidationResult = validateCreateTeam(name ?? "", description, avatarUrl);
+        if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
         const dto = new CreateTeamDto(name, description ?? "", avatarUrl ?? "", req.user!.id);
         const team = await this.teamService.createTeam(dto);
         if (!team || team.id === 0) { res.status(500).json({ success: false, message: "Failed to create team" }); return; }
@@ -57,6 +61,8 @@ export class TeamController {
     private async update(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+        const v: ValidationResult = validateUpdateTeam(req.body as Record<string, unknown>);
+        if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
         const ok = await this.teamService.updateTeam(id, req.body, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }
@@ -79,7 +85,8 @@ export class TeamController {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const { username } = req.body;
-        if (!username) { res.status(400).json({ success: false, message: "Username is required" }); return; }
+        const vm: ValidationResult = validateAddMember(username ?? "");
+        if (!vm.valid) { res.status(400).json({ success: false, message: vm.message }); return; }
         const ok = await this.memberService.addMember(id, username, req.user!.id);
         res.status(ok ? 200 : 400).json({ success: ok, message: ok ? undefined : "Cannot add member" });
     }
@@ -89,7 +96,8 @@ export class TeamController {
         const userId = parseInt(req.params.userId as string, 10);
         if (isNaN(id) || isNaN(userId)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
         const { role } = req.body;
-        if (!role) { res.status(400).json({ success: false, message: "Role is required" }); return; }
+        const vr: ValidationResult = validateUpdateMemberRole(role ?? "");
+        if (!vr.valid) { res.status(400).json({ success: false, message: vr.message }); return; }
         const ok = await this.memberService.updateMemberRole(id, userId, role, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }

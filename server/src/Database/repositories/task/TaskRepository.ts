@@ -1,7 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import { ITaskRepository } from "../../../Domain/repositories/task/ITaskRepository";
 import { Task } from "../../../Domain/models/Task";
-import { TaskUpdateFields } from "../../../Domain/types/TaskUpdateFields";
+import { TaskUpdateFieldsDto } from "../../../Domain/types/TaskUpdateFieldsDto";
 import { Assignee } from "../../../Domain/models/Assignee";
 import { Comment } from "../../../Domain/models/Comment";
 import { TaskStatus } from "../../../Domain/enums/TaskStatus";
@@ -137,7 +137,7 @@ export class TaskRepository implements ITaskRepository {
         } finally { res.conn.release(); }
     }
 
-    async update(id: number, fields: TaskUpdateFields): Promise<boolean> {
+    async update(id: number, fields: TaskUpdateFieldsDto): Promise<boolean> {
         const res = await this.db.getWriteConnection();
         if (!res) return false;
         try {

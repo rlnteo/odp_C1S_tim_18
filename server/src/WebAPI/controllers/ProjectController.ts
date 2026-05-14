@@ -1,3 +1,4 @@
+
 import { Request, Response, Router } from "express";
 import { IProjectService } from "../../Domain/services/project/IProjectService";
 import { IProjectTagService } from "../../Domain/services/project/IProjectTagService";
@@ -8,6 +9,9 @@ import { UserRole } from "../../Domain/enums/UserRole";
 import { CreateProjectDto } from "../../Domain/DTOs/project/CreateProjectDto";
 import { ProjectStatus } from "../../Domain/enums/ProjectStatus";
 import { ProjectPriority } from "../../Domain/enums/ProjectPriority";
+import { ValidationResult } from "../../Domain/types/ValidationResult";
+import { validateCreateProject } from "../validators/auth/project/validateCreateProject";
+import { validateUpdateProject } from "../validators/auth/project/validateUpdateProject";
 
 export class ProjectController {
     private readonly router = Router();
@@ -51,7 +55,8 @@ export class ProjectController {
         const teamId = parseInt(req.params.teamId as string, 10);
         if (isNaN(teamId)) { res.status(400).json({ success: false, message: "Invalid teamId" }); return; }
         const { name, description, deadline, status, priority } = req.body;
-        if (!name || !deadline) { res.status(400).json({ success: false, message: "Name and deadline are required" }); return; }
+        const v: ValidationResult = validateCreateProject(name ?? "", deadline, status, priority, description);
+        if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
         const dto = new CreateProjectDto(
             teamId, name, description ?? "",
             new Date(deadline as string),
@@ -75,6 +80,8 @@ export class ProjectController {
     private async update(req: Request, res: Response): Promise<void> {
         const id = parseInt(req.params.id as string, 10);
         if (isNaN(id)) { res.status(400).json({ success: false, message: "Invalid id" }); return; }
+        const v: ValidationResult = validateUpdateProject(req.body as Record<string, unknown>);
+        if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
         const ok = await this.projectService.updateProject(id, req.body, req.user!.id);
         res.status(ok ? 200 : 403).json({ success: ok, message: ok ? undefined : "Forbidden" });
     }

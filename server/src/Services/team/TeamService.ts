@@ -4,7 +4,7 @@ import { ITeamPermissionRepository } from "../../Domain/repositories/team/ITeamP
 import { Team } from "../../Domain/models/Team";
 import { TeamDto } from "../../Domain/DTOs/team/TeamDto";
 import { CreateTeamDto } from "../../Domain/DTOs/team/CreateTeamDto";
-import { TeamUpdateFields } from "../../Domain/types/TeamUpdateFields";
+import { TeamUpdateFieldsDto } from "../../Domain/types/TeamUpdateFieldsDto";
 import { TeamRole } from "../../Domain/enums/TeamRole";
 
 export class TeamService implements ITeamService {
@@ -40,7 +40,7 @@ export class TeamService implements ITeamService {
         return this.toDto(team);
     }
 
-    async updateTeam(id: number, fields: TeamUpdateFields, requesterId: number): Promise<boolean> {
+    async updateTeam(id: number, fields: TeamUpdateFieldsDto, requesterId: number): Promise<boolean> {
         const isOwner = await this.permRepo.isOwner(id, requesterId);
         if (!isOwner) return false;
         return this.teamRepo.update(id, fields);

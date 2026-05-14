@@ -1,6 +1,6 @@
 import { TaskDto } from "../../DTOs/task/TaskDto";
 import { CreateTaskDto } from "../../DTOs/task/CreateTaskDto";
-import { TaskUpdateFields } from "../../types/TaskUpdateFields";
+import { TaskUpdateFieldsDto } from "../../types/TaskUpdateFieldsDto";
 import { TaskStatus } from "../../enums/TaskStatus";
 
 export interface ITaskService {
@@ -8,7 +8,7 @@ export interface ITaskService {
     getTasksByProject(projectId: number): Promise<TaskDto[]>;
     getMyTasks(userId: number): Promise<TaskDto[]>;
     getTaskById(id: number): Promise<TaskDto | null>;
-    updateTask(id: number, fields: TaskUpdateFields, requesterId: number): Promise<boolean>;
+    updateTask(id: number, fields: TaskUpdateFieldsDto, requesterId: number): Promise<boolean>;
     updateStatus(id: number, status: TaskStatus, requesterId: number): Promise<boolean>;
     deleteTask(id: number, requesterId: number): Promise<boolean>;
 }

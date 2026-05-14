@@ -1,7 +1,7 @@
 import { TaskStatus } from "../enums/TaskStatus";
 import { ProjectPriority } from "../enums/ProjectPriority";
 
-export type TaskUpdateFields = {
+export type TaskUpdateFieldsDto = {
     title?: string;
     description?: string;
     priority?: ProjectPriority;
