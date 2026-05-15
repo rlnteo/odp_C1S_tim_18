@@ -5,26 +5,33 @@ import LoginPage    from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import NotFoundPage from "./pages/not_found/NotFoundPage";
 
-import UserDashboard from "./pages/user/UserDashboard";
+import UserDashboard    from "./pages/user/UserDashboard";
+import TeamsPage        from "./pages/user/TeamsPage";
+import TeamDetailPage   from "./pages/user/TeamDetailPage";
+import ProjectDetailPage from "./pages/user/ProjectDetailPage";
+
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import UsersPage from "./pages/admin/UsersPage";
+import UsersPage      from "./pages/admin/UsersPage";
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/login"    element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+    return (
+        <Routes>
+            <Route path="/login"    element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-      {/* User routes */}
-      <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><UserDashboard /></ProtectedRoute>} />
+            {/* User routes */}
+            <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><UserDashboard /></ProtectedRoute>} />
+            <Route path="/teams"     element={<ProtectedRoute requiredRole="user"><TeamsPage /></ProtectedRoute>} />
+            <Route path="/teams/:id" element={<ProtectedRoute requiredRole="user"><TeamDetailPage /></ProtectedRoute>} />
+            <Route path="/projects/:id" element={<ProtectedRoute requiredRole="user"><ProjectDetailPage /></ProtectedRoute>} />
 
-      {/* Admin routes */}
-      <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
+            {/* Admin routes */}
+            <Route path="/admin"       element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UsersPage /></ProtectedRoute>} />
 
-      <Route path="/"    element={<Navigate to="/login" replace />} />
-      <Route path="/404" element={<NotFoundPage />} />
-      <Route path="*"    element={<Navigate to="/404" replace />} />
-    </Routes>
-  );
+            <Route path="/"    element={<Navigate to="/login" replace />} />
+            <Route path="/404" element={<NotFoundPage />} />
+            <Route path="*"    element={<Navigate to="/404" replace />} />
+        </Routes>
+    );
 }
