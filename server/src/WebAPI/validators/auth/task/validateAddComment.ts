@@ -1,4 +1,4 @@
-import { ValidationResult } from "../../../Domain/types/ValidationResult";
+import { ValidationResult } from "../../../../Domain/types/ValidationResult";
 
 export const validateAddComment = (content: string): ValidationResult => {
   if (!content || content.trim().length < 1)
