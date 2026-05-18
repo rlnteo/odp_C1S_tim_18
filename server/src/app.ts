@@ -104,9 +104,9 @@ app.use("/api/v1", new EntityController(entityService).getRouter());
 app.use("/api/v1", new HealthController(healthService).getRouter());
 app.use("/api/v1", new StatisticsController(healthService).getRouter());
 app.use("/api/v1", new TeamController(teamService, teamMemberService).getRouter());
+app.use("/api/v1", new TaskController(taskService, taskAssigneeService, taskCommentService).getRouter());
 app.use("/api/v1", new ProjectController(projectService, projectTagService, projectWatcherService).getRouter());
 app.use("/api/v1", new TagController(projectTagService).getRouter());
-app.use("/api/v1", new TaskController(taskService, taskAssigneeService, taskCommentService).getRouter());
 app.use("/api/v1", new AuditController(auditService).getRouter());
 
 export default app;

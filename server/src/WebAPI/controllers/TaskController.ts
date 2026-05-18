@@ -47,17 +47,20 @@ export class TaskController {
     }
 
     private async create(req: Request, res: Response): Promise<void> {
+        console.log("TASK CREATE HIT"); 
         const projectId = parseInt(req.params.projectId as string, 10);
         if (isNaN(projectId)) { res.status(400).json({ success: false, message: "Invalid projectId" }); return; }
         const { title, description, priority, status, estimatedHours, dueDate } = req.body;
+        console.log("CREATE TASK BODY:", req.body); 
         const v: ValidationResult = validateCreateTask(title ?? "", estimatedHours, priority, status, description, dueDate);
+        console.log("VALIDATION:", v);
         if (!v.valid) { res.status(400).json({ success: false, message: v.message }); return; }
         const dto = new CreateTaskDto(
             projectId, title, description ?? "",
             (priority as ProjectPriority) ?? ProjectPriority.MEDIUM,
             (status as TaskStatus) ?? TaskStatus.TODO,
             Number(estimatedHours),
-            dueDate ? new Date(dueDate as string) : undefined,
+            dueDate ? new Date(dueDate as string) : new Date(0),
             req.user!.id,
         );
         const task = await this.taskService.createTask(dto);

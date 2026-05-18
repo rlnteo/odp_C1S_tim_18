@@ -63,16 +63,19 @@ export class TaskRepository implements ITaskRepository {
         const res = await this.db.getWriteConnection();
         if (!res) return new Task();
         try {
+            const dueDate = task.dueDate && task.dueDate.getTime() !== 0 ? task.dueDate : null;
+
             const [result] = await res.conn.execute<ResultSetHeader>(
                 `INSERT INTO tasks (projectId, title, description, priority, status, estimatedHours, dueDate, createdBy)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [task.projectId, task.title, task.description, task.priority, task.status, task.estimatedHours, task.dueDate, task.createdBy]
+                [task.projectId, task.title, task.description, task.priority, task.status, task.estimatedHours, dueDate, task.createdBy]
             );
             if (result.insertId === 0) return new Task();
             return new Task(result.insertId, task.projectId, task.title, task.description, task.priority, task.status, task.estimatedHours, task.dueDate ?? undefined, task.createdBy);
         } catch (err) {
-            this.logger.error("TaskRepository", "create failed", err);
-            return new Task();
+          this.logger.error("TaskRepository", "create failed", err);
+          console.log("CREATE TASK ERROR:", err);
+          return new Task();
         } finally { res.conn.release(); }
     }
 

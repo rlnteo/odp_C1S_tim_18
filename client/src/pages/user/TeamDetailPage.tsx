@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { PageHeader, Empty, ErrorBox, Spinner } from "../../components/ui/UI";
+import { PageHeader, Empty, ErrorBox, Spinner, Card, Button, Input } from "../../components/ui/UI";
 import { useTeam } from "../../hooks/team/UseTeamHook";
 import { useTeamMembers } from "../../hooks/team/UseTeamMemberHook";
 import { useProjectsByTeam, useCreateProject } from "../../hooks/project/UseProjectHook";
@@ -21,7 +21,6 @@ export default function TeamDetailPage() {
     const [showForm, setShowForm]  = useState(false);
     const [newUsername, setNewUsername] = useState("");
     const [addError, setAddError]  = useState("");
-
     const [projName, setProjName]  = useState("");
     const [projDesc, setProjDesc]  = useState("");
     const [projDeadline, setProjDeadline] = useState("");
@@ -41,10 +40,7 @@ export default function TeamDetailPage() {
             teamId, name: projName, description: projDesc,
             deadline: projDeadline, status: "planning", priority: "medium",
         });
-        if (project) {
-            setProjName(""); setProjDesc(""); setProjDeadline("");
-            setShowForm(false); reloadProjects();
-        }
+        if (project) { setProjName(""); setProjDesc(""); setProjDeadline(""); setShowForm(false); reloadProjects(); }
     };
 
     if (teamLoading) return <div className="py-16 flex justify-center"><Spinner /></div>;
@@ -55,22 +51,23 @@ export default function TeamDetailPage() {
             <PageHeader eyebrow="Team" title={team.name}
                 action={
                     !isOwner && (
-                        <button onClick={async () => { await leaveTeam(); navigate("/teams"); }}
-                            className="px-4 py-2 border border-red-500/20 text-red-400/60 hover:text-red-400 hover:border-red-500/40 rounded-xl text-sm transition-all">
+                        <Button variant="danger" onClick={async () => { await leaveTeam(); navigate("/teams"); }}>
                             Leave Team
-                        </button>
+                        </Button>
                     )
                 }
             />
 
-            {team.description && <p className="text-sm text-white/30 mb-6">{team.description}</p>}
+            {team.description && <p className="text-sm text-slate-400 mb-6">{team.description}</p>}
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 bg-white/3 border border-white/6 rounded-xl p-1 w-fit">
+            <div className="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1 w-fit">
                 {(["projects", "members"] as const).map(t => (
                     <button key={t} onClick={() => setTab(t)}
-                        className={`px-4 py-1.5 rounded-lg text-sm transition-all capitalize ${
-                            tab === t ? "bg-white/8 text-white border border-white/12" : "text-white/30 hover:text-white/60"
+                        className={`px-5 py-2 rounded-lg text-sm font-medium transition-all capitalize ${
+                            tab === t
+                                ? "bg-white text-violet-600 shadow-sm"
+                                : "text-slate-400 hover:text-slate-600"
                         }`}>
                         {t}
                     </button>
@@ -80,56 +77,50 @@ export default function TeamDetailPage() {
             {tab === "projects" && (
                 <div>
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-xs text-white/25 font-mono uppercase tracking-widest">Projects</p>
+                        <p className="text-sm font-semibold text-slate-600">Projects ({projects.length})</p>
                         {isOwner && (
-                            <button onClick={() => setShowForm(v => !v)}
-                                className="text-xs text-white/30 hover:text-white/60 transition-colors">
+                            <Button size="sm" variant={showForm ? "secondary" : "primary"} onClick={() => setShowForm(v => !v)}>
                                 {showForm ? "Cancel" : "+ New Project"}
-                            </button>
+                            </Button>
                         )}
                     </div>
 
                     {showForm && (
-                        <div className="bg-white/2 border border-white/8 rounded-2xl p-5 mb-4 flex flex-col gap-3">
-                            <input value={projName} onChange={e => setProjName(e.target.value)}
-                                placeholder="Project name"
-                                className="bg-white/4 border border-white/8 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-white/20" />
-                            <input value={projDesc} onChange={e => setProjDesc(e.target.value)}
-                                placeholder="Description (optional)"
-                                className="bg-white/4 border border-white/8 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-white/20" />
-                            <input type="date" value={projDeadline} onChange={e => setProjDeadline(e.target.value)}
-                                className="bg-white/4 border border-white/8 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-white/20" />
-                            {createError && <ErrorBox message={createError} />}
-                            <button onClick={handleCreateProject} disabled={creating || !projName.trim() || !projDeadline}
-                                className="px-4 py-2.5 bg-white/8 hover:bg-white/12 border border-white/12 rounded-xl text-sm text-white/70 disabled:opacity-40 transition-all self-start">
-                                {creating ? <Spinner size={14} /> : "Create Project"}
-                            </button>
+                        <div className="bg-white border border-violet-100 rounded-2xl p-5 mb-4 shadow-sm">
+                            <div className="flex flex-col gap-3">
+                                <Input value={projName} onChange={setProjName} placeholder="Project name" />
+                                <Input value={projDesc} onChange={setProjDesc} placeholder="Description (optional)" />
+                                <input type="date" value={projDeadline} onChange={e => setProjDeadline(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-50 transition-all" />
+                                {createError && <ErrorBox message={createError} />}
+                                <div className="flex justify-end">
+                                    <Button onClick={handleCreateProject} disabled={creating || !projName.trim() || !projDeadline}>
+                                        {creating ? <Spinner size={14} /> : "Create Project"}
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     )}
 
                     {projectsLoading && <div className="py-8 flex justify-center"><Spinner /></div>}
                     {!projectsLoading && projects.length === 0 && <Empty message="No projects yet" />}
-                    <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                         {projects.map(project => (
-                            <div key={project.id}
-                                onClick={() => navigate(`/projects/${project.id}`)}
-                                className="bg-white/2 border border-white/6 rounded-xl px-4 py-3 flex items-center justify-between hover:border-white/12 hover:bg-white/4 cursor-pointer transition-all">
-                                <div>
-                                    <p className="text-sm text-white/80 font-medium">{project.name}</p>
-                                    <p className="text-xs text-white/25">{project.description || "No description"}</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs text-white/20 font-mono">
-                                        {new Date(project.deadline).toLocaleDateString()}
-                                    </span>
-                                    <span className={`text-xs px-2 py-1 rounded-lg border ${
-                                        project.status === "active"    ? "bg-sky-500/10 text-sky-400 border-sky-500/20" :
-                                        project.status === "completed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                                        project.status === "on_hold"   ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
-                                        "bg-white/5 text-white/30 border-white/10"
+                            <Card key={project.id} onClick={() => navigate(`/projects/${project.id}`)}>
+                                <div className="flex items-start justify-between mb-2">
+                                    <p className="text-sm font-bold text-slate-700">{project.name}</p>
+                                    <span className={`text-xs px-2 py-1 rounded-lg border font-medium ${
+                                        project.status === "active"    ? "bg-sky-100 text-sky-600 border-sky-200" :
+                                        project.status === "completed" ? "bg-emerald-100 text-emerald-600 border-emerald-200" :
+                                        project.status === "on_hold"   ? "bg-amber-100 text-amber-600 border-amber-200" :
+                                        "bg-violet-100 text-violet-600 border-violet-200"
                                     }`}>{project.status}</span>
                                 </div>
-                            </div>
+                                <p className="text-xs text-slate-400 mb-3">{project.description || "No description"}</p>
+                                <p className="text-xs text-slate-300 font-mono">
+                                    Due {new Date(project.deadline).toLocaleDateString()}
+                                </p>
+                            </Card>
                         ))}
                     </div>
                 </div>
@@ -137,52 +128,42 @@ export default function TeamDetailPage() {
 
             {tab === "members" && (
                 <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <p className="text-xs text-white/25 font-mono uppercase tracking-widest">Members</p>
-                    </div>
-
                     {isOwner && (
                         <div className="flex gap-2 mb-4">
-                            <input value={newUsername} onChange={e => setNewUsername(e.target.value)}
-                                placeholder="Username"
-                                className="flex-1 bg-white/4 border border-white/8 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-white/20" />
-                            <button onClick={handleAddMember} disabled={!newUsername.trim()}
-                                className="px-4 py-2.5 bg-white/8 hover:bg-white/12 border border-white/12 rounded-xl text-sm text-white/70 disabled:opacity-40 transition-all">
-                                Add
-                            </button>
+                            <Input value={newUsername} onChange={setNewUsername} placeholder="Add member by username" />
+                            <Button onClick={handleAddMember} disabled={!newUsername.trim()}>Add</Button>
                         </div>
                     )}
                     {addError && <ErrorBox message={addError} />}
-
                     {membersLoading && <div className="py-8 flex justify-center"><Spinner /></div>}
                     {!membersLoading && members.length === 0 && <Empty message="No members" />}
                     <div className="flex flex-col gap-2">
                         {members.map(member => (
-                            <div key={member.userId}
-                                className="bg-white/2 border border-white/6 rounded-xl px-4 py-3 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-full bg-white/5 border border-white/8 flex items-center justify-center">
-                                        <span className="text-xs text-white/40">{member.username[0]?.toUpperCase()}</span>
+                            <Card key={member.userId}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                                            <span className="text-sm text-violet-600 font-semibold">{member.username[0]?.toUpperCase()}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-700">{member.username}</p>
+                                            <p className="text-xs text-slate-400">Joined {new Date(member.joinedAt).toLocaleDateString()}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-white/70">{member.username}</p>
-                                        <p className="text-xs text-white/25">{new Date(member.joinedAt).toLocaleDateString()}</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-xs px-2.5 py-1 rounded-lg border font-medium ${
+                                            member.role === "owner"
+                                                ? "bg-violet-100 text-violet-600 border-violet-200"
+                                                : "bg-slate-100 text-slate-500 border-slate-200"
+                                        }`}>{member.role}</span>
+                                        {isOwner && member.userId !== user?.id && (
+                                            <Button size="sm" variant="danger" onClick={() => removeMember(member.userId)}>
+                                                Remove
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-xs px-2 py-1 rounded-lg border ${
-                                        member.role === "owner"
-                                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                            : "bg-white/5 text-white/30 border-white/10"
-                                    }`}>{member.role}</span>
-                                    {isOwner && member.userId !== user?.id && (
-                                        <button onClick={() => removeMember(member.userId)}
-                                            className="text-xs text-red-400/40 hover:text-red-400 transition-colors">
-                                            Remove
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 </div>

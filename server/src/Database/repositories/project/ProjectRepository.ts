@@ -50,8 +50,9 @@ export class ProjectRepository implements IProjectRepository {
             if (result.insertId === 0) return new Project();
             return new Project(result.insertId, project.teamId, project.name, project.description, project.deadline, project.status, project.priority, project.createdBy);
         } catch (err) {
-            this.logger.error("ProjectRepository", "create failed", err);
-            return new Project();
+          this.logger.error("ProjectRepository", "create failed", err);
+          console.log("CREATE PROJECT ERROR:", err);
+          return new Project();
         } finally { res.conn.release(); }
     }
 

@@ -1,4 +1,4 @@
-import { PageHeader, StatCard, Empty, ErrorBox, Spinner, StatusBadge } from "../../components/ui/UI";
+import { PageHeader, StatCard, Empty, ErrorBox, Spinner, StatusBadge, Card } from "../../components/ui/UI";
 import { useAuth } from "../../hooks/auth/useAuthHook";
 import { useMyTeams } from "../../hooks/team/UseTeamHook";
 import { useMyTasks } from "../../hooks/task/UseTaskHook";
@@ -10,27 +10,28 @@ export default function UserDashboard() {
     const { tasks, loading: tasksLoading, error: tasksError } = useMyTasks();
     const navigate = useNavigate();
 
-    const todoCount      = tasks.filter(t => t.status === "todo").length;
+    const todoCount       = tasks.filter(t => t.status === "todo").length;
     const inProgressCount = tasks.filter(t => t.status === "in_progress").length;
-    const doneCount      = tasks.filter(t => t.status === "done").length;
+    const doneCount       = tasks.filter(t => t.status === "done").length;
 
     return (
         <div>
-            <PageHeader eyebrow="Overview" title={`Welcome, ${user?.username}`} />
+            <PageHeader eyebrow="Overview" title={`Welcome back, ${user?.username} 👋`} />
 
-            <div className="grid grid-cols-3 gap-4 mb-8">
-                <StatCard label="My Teams"       value={teams.length} />
-                <StatCard label="Tasks To Do"    value={todoCount}       color="text-yellow-400" />
-                <StatCard label="In Progress"    value={inProgressCount} color="text-sky-400" />
+            <div className="grid grid-cols-4 gap-4 mb-8">
+                <StatCard label="My Teams"    value={teams.length} />
+                <StatCard label="To Do"       value={todoCount}        color="text-amber-500" />
+                <StatCard label="In Progress" value={inProgressCount}  color="text-blue-500" />
+                <StatCard label="Done"        value={doneCount}        color="text-emerald-500" />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
                 {/* Teams */}
                 <div>
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-xs text-white/25 font-mono uppercase tracking-widest">My Teams</p>
+                        <p className="text-sm font-semibold text-slate-600">My Teams</p>
                         <button onClick={() => navigate("/teams")}
-                            className="text-xs text-white/30 hover:text-white/60 transition-colors">
+                            className="text-xs text-violet-500 hover:text-violet-600 font-medium transition-colors">
                             View all →
                         </button>
                     </div>
@@ -39,40 +40,41 @@ export default function UserDashboard() {
                     {!teamsLoading && teams.length === 0 && <Empty message="No teams yet" />}
                     <div className="flex flex-col gap-2">
                         {teams.slice(0, 5).map(team => (
-                            <div key={team.id}
-                                onClick={() => navigate(`/teams/${team.id}`)}
-                                className="bg-white/2 border border-white/6 rounded-xl px-4 py-3 flex items-center gap-3 hover:border-white/12 hover:bg-white/4 cursor-pointer transition-all">
-                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center shrink-0">
-                                    <span className="text-white/40 text-sm font-medium">{team.name[0]?.toUpperCase()}</span>
+                            <Card key={team.id} onClick={() => navigate(`/teams/${team.id}`)}>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                                        <span className="text-violet-600 font-bold text-sm">{team.name[0]?.toUpperCase()}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-slate-700 truncate">{team.name}</p>
+                                        <p className="text-xs text-slate-400 truncate">{team.description || "No description"}</p>
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <p className="text-sm text-white/80 font-medium truncate">{team.name}</p>
-                                    <p className="text-xs text-white/25 truncate">{team.description || "No description"}</p>
-                                </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 </div>
 
-                {/* My Tasks */}
+                {/* Tasks */}
                 <div>
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-xs text-white/25 font-mono uppercase tracking-widest">My Tasks</p>
-                        <span className="text-xs text-white/20 font-mono">{doneCount}/{tasks.length} done</span>
+                        <p className="text-sm font-semibold text-slate-600">My Tasks</p>
+                        <span className="text-xs text-slate-400 font-mono">{doneCount}/{tasks.length} done</span>
                     </div>
                     {tasksLoading && <div className="py-8 flex justify-center"><Spinner /></div>}
                     {tasksError && <ErrorBox message={tasksError} />}
                     {!tasksLoading && tasks.length === 0 && <Empty message="No tasks assigned" />}
                     <div className="flex flex-col gap-2">
                         {tasks.slice(0, 5).map(task => (
-                            <div key={task.id}
-                                className="bg-white/2 border border-white/6 rounded-xl px-4 py-3 flex items-center justify-between hover:border-white/12 transition-all">
-                                <div className="min-w-0">
-                                    <p className="text-sm text-white/80 truncate">{task.title}</p>
-                                    <p className="text-xs text-white/25">{task.estimatedHours}h estimated</p>
+                            <Card key={task.id}>
+                                <div className="flex items-center justify-between">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-slate-700 truncate">{task.title}</p>
+                                        <p className="text-xs text-slate-400">{task.estimatedHours}h estimated</p>
+                                    </div>
+                                    <StatusBadge status={task.status} />
                                 </div>
-                                <StatusBadge status={task.status} />
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 </div>
