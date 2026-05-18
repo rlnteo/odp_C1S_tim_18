@@ -148,7 +148,7 @@ export class TaskRepository implements ITaskRepository {
             if (entries.length === 0) return false;
             const setClause = entries.map(([k]) => `${k} = ?`).join(", ");
             const values = entries.map(([, v]) => v);
-            const [result] = await res.conn.query<ResultSetHeader>(
+            const [result] = await res.conn.execute<ResultSetHeader>(
                 `UPDATE tasks SET ${setClause} WHERE id = ?`, [...values, id]
             );
             return result.affectedRows > 0;

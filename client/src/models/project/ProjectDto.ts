@@ -9,6 +9,7 @@ export interface ProjectDto {
   createdBy: number;
   createdAt: string;
   tags: TagDto[];
+  isWatching: boolean;
 }
 
 export interface TagDto {

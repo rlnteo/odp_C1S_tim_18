@@ -28,18 +28,13 @@ export class TaskService implements ITaskService {
     }
 
     async createTask(dto: CreateTaskDto): Promise<TaskDto> {
-        console.log("CREATING TASK:", dto);
         const task = new Task(
             0, dto.projectId, dto.title, dto.description,
             dto.priority, dto.status, dto.estimatedHours, dto.dueDate, dto.createdBy,
         );
-        console.log("TASK OBJECT:", task);
         const created = await this.taskRepo.create(task);
-        console.log("CREATED:", created);
         if (created.id === 0) return new TaskDto();
-        const full = await this.taskRepo.findById(created.id);
-        if (!full) return new TaskDto();
-        return this.toDto(full);
+        return this.toDto(created);
     }
 
     async getTasksByProject(projectId: number): Promise<TaskDto[]> {

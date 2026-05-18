@@ -51,8 +51,8 @@ export class ProjectRepository implements IProjectRepository {
             return new Project(result.insertId, project.teamId, project.name, project.description, project.deadline, project.status, project.priority, project.createdBy);
         } catch (err) {
           this.logger.error("ProjectRepository", "create failed", err);
-          console.log("CREATE PROJECT ERROR:", err);
-          return new Project();
+    console.error("PROJECT CREATE RAW ERROR:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    return new Project();
         } finally { res.conn.release(); }
     }
 
@@ -123,7 +123,7 @@ export class ProjectRepository implements IProjectRepository {
             if (entries.length === 0) return false;
             const setClause = entries.map(([k]) => `${k} = ?`).join(", ");
             const values = entries.map(([, v]) => v);
-            const [result] = await res.conn.query<ResultSetHeader>(
+            const [result] = await res.conn.execute<ResultSetHeader>(
                 `UPDATE projects SET ${setClause} WHERE id = ?`, [...values, id]
             );
             return result.affectedRows > 0;

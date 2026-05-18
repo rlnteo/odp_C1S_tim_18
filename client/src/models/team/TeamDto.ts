@@ -10,7 +10,6 @@ export interface TeamDto {
 export interface TeamMemberDto {
   userId: number;
   username: string;
-  email: string;
   role: "owner" | "member";
   joinedAt: string;
 }

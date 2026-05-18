@@ -21,6 +21,7 @@ export interface AssigneeDto {
 
 export interface CommentDto {
   id: number;
+  taskId: number;
   userId: number;
   username: string;
   content: string;
